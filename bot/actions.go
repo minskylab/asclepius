@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/minskylab/asclepius"
 	neo "github.com/minskylab/neocortex"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -27,7 +28,7 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 			"phone": phone,
 		}).Info("generating sms alert")
 
-		response(c, out)
+		_ = response(c, out)
 
 		timer, err := bot.emitter.LogMeasureBySMS(phone, c.Person.Name, 15*time.Minute)
 		if err != nil {
@@ -42,6 +43,61 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 		}(phone, c.Person.Name, dni, timer)
 
 		return nil
+	})
+
+	clinicResults := neo.IfDialogNodeTitleIs("Resultados Clínicos")
+	bot.engine.Resolve(fb, clinicResults, func(c *neo.Context, in *neo.Input, out *neo.Output, response neo.OutputResponse) error {
+		test, err := bot.core.RegisterTestFromBot(c.Person.ID, asclepius.ClinicSymptoms{
+			GeneralDiscomfort: c.Variables["b1"].(bool),
+			Fever:             c.Variables["b2"].(bool),
+			ThirdAge:          c.Variables["b3"].(bool),
+			Dyspnea:           c.Variables["b4"].(bool),
+		}, asclepius.EpidemicConditions{})
+		if err != nil {
+			log.WithField("session", c.SessionID).Error(errors.Cause(err))
+		} else {
+			c.SetContextVariable("last_test_id", test.ID.String())
+		}
+
+		return response(c, out)
+	})
+
+	epidemiologicResults := neo.IfDialogNodeTitleIs("Resultados Finales")
+	bot.engine.Resolve(fb, epidemiologicResults, func(c *neo.Context, in *neo.Input, out *neo.Output, response neo.OutputResponse) error {
+		testID := c.GetStringContextVariable("last_test_id", "")
+		if testID == "" {
+			return response(c, out)
+		}
+
+		exposition := 0
+
+		intimacyExposition := c.Variables["b5"].(bool)
+		regionalExposition := c.Variables["b6"].(bool)
+		globalExposition := c.Variables["b7"].(bool)
+
+		if intimacyExposition {
+			exposition = 4
+		}
+
+		if regionalExposition {
+			exposition = 3
+		}
+
+		if globalExposition {
+			exposition = 2
+		}
+
+		_, err := bot.core.AddEpidemiologicFactorsToTest(testID, asclepius.EpidemicConditions{
+			VisitedPlaces:               []string{},
+			InfectedFamily:              false,
+			FromInfectedPlaceExposition: exposition,
+			ToInfectedPlaceExposition:   exposition,
+		})
+		if err != nil {
+			log.WithField("session", c.SessionID).Error(errors.Cause(err))
+		}
+
+		return response(c, out)
 	})
 
 	bot.engine.ResolveAny(fb, func(c *neo.Context, in *neo.Input, out *neo.Output, response neo.OutputResponse) error {
@@ -66,4 +122,3 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 	})
 
 }
-
