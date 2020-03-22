@@ -11,6 +11,7 @@ import (
 	"github.com/minskylab/asclepius/ent/patient"
 	"github.com/minskylab/asclepius/ent/test"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type ClinicSymptoms struct {
@@ -197,12 +198,15 @@ func (core *Core) addEpidemiologicToTest(testID string, epidemic EpidemicConditi
 
 
 func (core *Core) AddEpidemiologicFactorsToTest(testID string, epidemic EpidemicConditions) (*ent.Test, error) {
+	log.WithField("testID", testID).Info("adding epidemiologic facts")
 	return core.addEpidemiologicToTest(testID, epidemic)
 }
 func (core *Core) RegisterPatientFromFacebook(fbID, name, phone string) (*ent.Patient, error) {
+	log.WithField("patientName", name).Info("registering new patient from facebook")
 	return core.registerNewPatientFromFacebook(fbID, name, phone)
 }
 
 func (core *Core) RegisterTestFromBot(fbID string, clinic ClinicSymptoms, epidemic EpidemicConditions, notes ...string) (*ent.Test, error) {
-	return core.registerNewTestToPatientByAlias(fbID, clinic, epidemic)
+	log.WithField("id", fbID).Info("registering test from asclepius bot")
+	return core.registerNewTestToPatientByAlias(fbID, clinic, epidemic, notes...)
 }
