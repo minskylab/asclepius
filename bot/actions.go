@@ -59,7 +59,7 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 			c.SetContextVariable("last_test_id", test.ID.String())
 		}
 
-		return nil
+		return response(c, out)
 	})
 
 	epidemiologicResults := neo.IfDialogNodeTitleIs("Resultados Finales")
@@ -101,8 +101,15 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 
 	bot.engine.ResolveAny(fb, func(c *neo.Context, in *neo.Input, out *neo.Output, response neo.OutputResponse) error {
 		c.SetContextVariable("name", c.Person.Name)
-		go func(sID, fbID, name, phone string) {
+		go func(c *neo.Context) {
+			if c.Variables["identified"] != nil {
+				return
+			}
+
+			sID, fbID, name, phone := c.SessionID, c.Person.ID, c.Person.Name, c.GetStringContextVariable("phone", "+51000000000")
+
 			log.WithField("session", sID).Info("verifying if user exist")
+
 			isPatient, err := bot.core.UserOfFacebookIsPatient(fbID)
 			if err != nil {
 				log.WithField("session", sID).Error(err)
@@ -116,7 +123,8 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 			if _, err = bot.core.RegisterPatientFromFacebook(fbID, name, phone); err != nil {
 				log.WithField("session", sID).Error(err)
 			}
-		}(c.SessionID, c.Person.ID, c.Person.Name, c.GetStringContextVariable("phone", "+51000000000"))
+			c.SetContextVariable("identified", true)
+		}(c)
 		return response(c, out)
 	})
 
