@@ -59,7 +59,7 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 			c.SetContextVariable("last_test_id", test.ID.String())
 		}
 
-		return response(c, out)
+		return nil
 	})
 
 	epidemiologicResults := neo.IfDialogNodeTitleIs("Resultados Finales")
@@ -96,8 +96,7 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 		if err != nil {
 			log.WithField("session", c.SessionID).Error(errors.Cause(err))
 		}
-
-		return response(c, out)
+		return nil
 	})
 
 	bot.engine.ResolveAny(fb, func(c *neo.Context, in *neo.Input, out *neo.Output, response neo.OutputResponse) error {
