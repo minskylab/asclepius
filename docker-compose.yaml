@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  asclepius-bot:
+    build: .
+    restart: always
+    environment:
+      VAULT_ADDRESS: ${VAULT_ADDRESS}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+  portal:
+    image: steveltn/https-portal
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    links:
+      - covid19
+    environment:
+      DOMAINS: "entity-covid19.minsky.cc -> http://asclepius-bot:8080"
+      STAGE: "production"
+      #FORCE_RENEW: "true"
