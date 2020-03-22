@@ -25,10 +25,18 @@ type TwilioConfig struct {
 	AuthToken string
 }
 
+type AsclepiusDataStore struct {
+	Endpoint string
+	User string
+	Password string
+	DatabaseName string
+}
+
 type GlobalConfig struct {
 	Messenger MessengerConfig
 	Watson WatsonConfig
 	Twilio TwilioConfig
+	Storage AsclepiusDataStore
 }
 
 
@@ -62,6 +70,11 @@ func getGlobalConfigFromVault() (*GlobalConfig, error) {
 		return nil, errors.Wrap(err, "cannot read kv twilio")
 	}
 
+	database, err := tape.Read(asclepius + "/database")
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot read kv twilio")
+	}
+
 	config := new(GlobalConfig)
 
 	if messenger.Data["data"] != nil {
@@ -88,6 +101,16 @@ func getGlobalConfigFromVault() (*GlobalConfig, error) {
 		config.Twilio = TwilioConfig{
 			AccountID: data["accountID"].(string),
 			AuthToken: data["authToken"].(string),
+		}
+	}
+	
+	if database.Data["data"] != nil {
+		data := database.Data["data"].(map[string]interface{})
+		config.Storage = AsclepiusDataStore{
+			Endpoint:     data["endpoint"].(string),
+			User:         data["user"].(string),
+			Password:     data["password"].(string),
+			DatabaseName: data["databaseName"].(string),
 		}
 	}
 

@@ -13,7 +13,7 @@ func main() {
 		panic(errors.Cause(err))
 	}
 
-	core, err := asclepius.NewCore()
+	core, err := asclepius.NewCore(conf)
 	if err != nil {
 		panic(errors.Cause(err))
 	}
