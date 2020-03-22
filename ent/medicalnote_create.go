@@ -10,9 +10,9 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/history"
 	"github.com/minskylab/asclepius/ent/medicalnote"
-	"github.com/minskylab/asclepius/ent/medicus"
 )
 
 // MedicalNoteCreate is the builder for creating a MedicalNote entity.
@@ -95,7 +95,7 @@ func (mnc *MedicalNoteCreate) SetHistory(h *History) *MedicalNoteCreate {
 	return mnc.SetHistoryID(h.ID)
 }
 
-// SetOwnerID sets the owner edge to Medicus by id.
+// SetOwnerID sets the owner edge to Doctor by id.
 func (mnc *MedicalNoteCreate) SetOwnerID(id uuid.UUID) *MedicalNoteCreate {
 	if mnc.owner == nil {
 		mnc.owner = make(map[uuid.UUID]struct{})
@@ -104,7 +104,7 @@ func (mnc *MedicalNoteCreate) SetOwnerID(id uuid.UUID) *MedicalNoteCreate {
 	return mnc
 }
 
-// SetNillableOwnerID sets the owner edge to Medicus by id if the given value is not nil.
+// SetNillableOwnerID sets the owner edge to Doctor by id if the given value is not nil.
 func (mnc *MedicalNoteCreate) SetNillableOwnerID(id *uuid.UUID) *MedicalNoteCreate {
 	if id != nil {
 		mnc = mnc.SetOwnerID(*id)
@@ -112,9 +112,9 @@ func (mnc *MedicalNoteCreate) SetNillableOwnerID(id *uuid.UUID) *MedicalNoteCrea
 	return mnc
 }
 
-// SetOwner sets the owner edge to Medicus.
-func (mnc *MedicalNoteCreate) SetOwner(m *Medicus) *MedicalNoteCreate {
-	return mnc.SetOwnerID(m.ID)
+// SetOwner sets the owner edge to Doctor.
+func (mnc *MedicalNoteCreate) SetOwner(d *Doctor) *MedicalNoteCreate {
+	return mnc.SetOwnerID(d.ID)
 }
 
 // Save creates the MedicalNote in the database.
@@ -224,7 +224,7 @@ func (mnc *MedicalNoteCreate) sqlSave(ctx context.Context) (*MedicalNote, error)
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}

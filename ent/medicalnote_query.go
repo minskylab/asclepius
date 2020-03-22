@@ -12,9 +12,9 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/history"
 	"github.com/minskylab/asclepius/ent/medicalnote"
-	"github.com/minskylab/asclepius/ent/medicus"
 	"github.com/minskylab/asclepius/ent/predicate"
 )
 
@@ -28,7 +28,7 @@ type MedicalNoteQuery struct {
 	predicates []predicate.MedicalNote
 	// eager-loading edges.
 	withHistory *HistoryQuery
-	withOwner   *MedicusQuery
+	withOwner   *DoctorQuery
 	withFKs     bool
 	// intermediate query.
 	sql *sql.Selector
@@ -71,11 +71,11 @@ func (mnq *MedicalNoteQuery) QueryHistory() *HistoryQuery {
 }
 
 // QueryOwner chains the current query on the owner edge.
-func (mnq *MedicalNoteQuery) QueryOwner() *MedicusQuery {
-	query := &MedicusQuery{config: mnq.config}
+func (mnq *MedicalNoteQuery) QueryOwner() *DoctorQuery {
+	query := &DoctorQuery{config: mnq.config}
 	step := sqlgraph.NewStep(
 		sqlgraph.From(medicalnote.Table, medicalnote.FieldID, mnq.sqlQuery()),
-		sqlgraph.To(medicus.Table, medicus.FieldID),
+		sqlgraph.To(doctor.Table, doctor.FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, medicalnote.OwnerTable, medicalnote.OwnerColumn),
 	)
 	query.sql = sqlgraph.SetNeighbors(mnq.driver.Dialect(), step)
@@ -264,8 +264,8 @@ func (mnq *MedicalNoteQuery) WithHistory(opts ...func(*HistoryQuery)) *MedicalNo
 
 //  WithOwner tells the query-builder to eager-loads the nodes that are connected to
 // the "owner" edge. The optional arguments used to configure the query builder of the edge.
-func (mnq *MedicalNoteQuery) WithOwner(opts ...func(*MedicusQuery)) *MedicalNoteQuery {
-	query := &MedicusQuery{config: mnq.config}
+func (mnq *MedicalNoteQuery) WithOwner(opts ...func(*DoctorQuery)) *MedicalNoteQuery {
+	query := &DoctorQuery{config: mnq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -383,12 +383,12 @@ func (mnq *MedicalNoteQuery) sqlAll(ctx context.Context) ([]*MedicalNote, error)
 		ids := make([]uuid.UUID, 0, len(nodes))
 		nodeids := make(map[uuid.UUID][]*MedicalNote)
 		for i := range nodes {
-			if fk := nodes[i].medicus_notes; fk != nil {
+			if fk := nodes[i].doctor_notes; fk != nil {
 				ids = append(ids, *fk)
 				nodeids[*fk] = append(nodeids[*fk], nodes[i])
 			}
 		}
-		query.Where(medicus.IDIn(ids...))
+		query.Where(doctor.IDIn(ids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
@@ -396,7 +396,7 @@ func (mnq *MedicalNoteQuery) sqlAll(ctx context.Context) ([]*MedicalNote, error)
 		for _, n := range neighbors {
 			nodes, ok := nodeids[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "medicus_notes" returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "doctor_notes" returned %v`, n.ID)
 			}
 			for i := range nodes {
 				nodes[i].Edges.Owner = n

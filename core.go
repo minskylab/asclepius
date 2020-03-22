@@ -1,6 +1,8 @@
 package asclepius
 
 import (
+	"context"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/minskylab/asclepius/ent"
 	"github.com/pkg/errors"
@@ -24,6 +26,10 @@ func (core *Core) openClient() error {
 	core.client, err = ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
 	if err != nil {
 		return errors.Wrap(err, "failed opening connection to sqlite")
+	}
+
+	if err = core.client.Schema.Create(context.Background()); err != nil {
+		return errors.Wrap(err, "error at create schema")
 	}
 	return nil
 }

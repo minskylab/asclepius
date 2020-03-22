@@ -33,11 +33,11 @@ const (
 	HistoryColumn = "history_notes"
 	// OwnerTable is the table the holds the owner relation/edge.
 	OwnerTable = "medical_notes"
-	// OwnerInverseTable is the table name for the Medicus entity.
-	// It exists in this package in order to avoid circular dependency with the "medicus" package.
-	OwnerInverseTable = "medicus"
+	// OwnerInverseTable is the table name for the Doctor entity.
+	// It exists in this package in order to avoid circular dependency with the "doctor" package.
+	OwnerInverseTable = "doctors"
 	// OwnerColumn is the table column denoting the owner relation/edge.
-	OwnerColumn = "medicus_notes"
+	OwnerColumn = "doctor_notes"
 )
 
 // Columns holds all SQL columns for medicalnote fields.
@@ -51,8 +51,8 @@ var Columns = []string{
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the MedicalNote type.
 var ForeignKeys = []string{
+	"doctor_notes",
 	"history_notes",
-	"medicus_notes",
 }
 
 var (

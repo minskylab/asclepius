@@ -33,6 +33,6 @@ func (MedicalNote) Fields() []ent.Field {
 func (MedicalNote) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("history", History.Type).Unique().Ref("notes"),
-		edge.From("owner", Medicus.Type).Unique().Ref("notes"),
+		edge.From("owner", Doctor.Type).Unique().Ref("notes"),
 	}
 }

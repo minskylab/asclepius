@@ -3,7 +3,7 @@
 package migrate
 
 import (
-	"github.com/minskylab/asclepius/ent/medicus"
+	"github.com/minskylab/asclepius/ent/doctor"
 
 	"github.com/facebookincubator/ent/dialect/sql/schema"
 	"github.com/facebookincubator/ent/schema/field"
@@ -44,6 +44,23 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+	}
+	// DoctorsColumns holds the columns for the "doctors" table.
+	DoctorsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeJSON},
+		{Name: "email", Type: field.TypeString, Unique: true},
+		{Name: "phone", Type: field.TypeString, Unique: true},
+		{Name: "state", Type: field.TypeEnum, Enums: []string{"idle", "working", "unavailable"}},
+		{Name: "last_connection", Type: field.TypeTime, Nullable: true},
+		{Name: "volunteer", Type: field.TypeBool, Default: doctor.DefaultVolunteer},
+	}
+	// DoctorsTable holds the schema information for the "doctors" table.
+	DoctorsTable = &schema.Table{
+		Name:        "doctors",
+		Columns:     DoctorsColumns,
+		PrimaryKey:  []*schema.Column{DoctorsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{},
 	}
 	// EpidemiologicResultsColumns holds the columns for the "epidemiologic_results" table.
 	EpidemiologicResultsColumns = []*schema.Column{
@@ -96,8 +113,8 @@ var (
 		{Name: "last_change", Type: field.TypeTime},
 		{Name: "observations", Type: field.TypeJSON},
 		{Name: "meta", Type: field.TypeJSON, Nullable: true},
+		{Name: "doctor_notes", Type: field.TypeUUID, Nullable: true},
 		{Name: "history_notes", Type: field.TypeUUID, Nullable: true},
-		{Name: "medicus_notes", Type: field.TypeUUID, Nullable: true},
 	}
 	// MedicalNotesTable holds the schema information for the "medical_notes" table.
 	MedicalNotesTable = &schema.Table{
@@ -106,43 +123,17 @@ var (
 		PrimaryKey: []*schema.Column{MedicalNotesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "medical_notes_histories_notes",
+				Symbol:  "medical_notes_doctors_notes",
 				Columns: []*schema.Column{MedicalNotesColumns[5]},
 
-				RefColumns: []*schema.Column{HistoriesColumns[0]},
+				RefColumns: []*schema.Column{DoctorsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:  "medical_notes_medicus_notes",
+				Symbol:  "medical_notes_histories_notes",
 				Columns: []*schema.Column{MedicalNotesColumns[6]},
 
-				RefColumns: []*schema.Column{MedicusColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
-	}
-	// MedicusColumns holds the columns for the "medicus" table.
-	MedicusColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "name", Type: field.TypeJSON},
-		{Name: "email", Type: field.TypeString, Unique: true},
-		{Name: "phone", Type: field.TypeString, Unique: true},
-		{Name: "state", Type: field.TypeEnum, Enums: []string{"idle", "working", "unavailable"}},
-		{Name: "last_connection", Type: field.TypeTime, Nullable: true},
-		{Name: "volunteer", Type: field.TypeBool, Default: medicus.DefaultVolunteer},
-		{Name: "task_responsible", Type: field.TypeUUID, Nullable: true},
-	}
-	// MedicusTable holds the schema information for the "medicus" table.
-	MedicusTable = &schema.Table{
-		Name:       "medicus",
-		Columns:    MedicusColumns,
-		PrimaryKey: []*schema.Column{MedicusColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:  "medicus_tasks_responsible",
-				Columns: []*schema.Column{MedicusColumns[7]},
-
-				RefColumns: []*schema.Column{TasksColumns[0]},
+				RefColumns: []*schema.Column{HistoriesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -239,18 +230,46 @@ var (
 			},
 		},
 	}
+	// TaskResponsibleColumns holds the columns for the "task_responsible" table.
+	TaskResponsibleColumns = []*schema.Column{
+		{Name: "task_id", Type: field.TypeUUID},
+		{Name: "doctor_id", Type: field.TypeUUID},
+	}
+	// TaskResponsibleTable holds the schema information for the "task_responsible" table.
+	TaskResponsibleTable = &schema.Table{
+		Name:       "task_responsible",
+		Columns:    TaskResponsibleColumns,
+		PrimaryKey: []*schema.Column{TaskResponsibleColumns[0], TaskResponsibleColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "task_responsible_task_id",
+				Columns: []*schema.Column{TaskResponsibleColumns[0]},
+
+				RefColumns: []*schema.Column{TasksColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:  "task_responsible_doctor_id",
+				Columns: []*schema.Column{TaskResponsibleColumns[1]},
+
+				RefColumns: []*schema.Column{DoctorsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AlertsTable,
 		ClinicalResultsTable,
+		DoctorsTable,
 		EpidemiologicResultsTable,
 		HistoriesTable,
 		MedicalNotesTable,
-		MedicusTable,
 		PatientsTable,
 		SchedulesTable,
 		TasksTable,
 		TestsTable,
+		TaskResponsibleTable,
 	}
 )
 
@@ -258,10 +277,11 @@ func init() {
 	ClinicalResultsTable.ForeignKeys[0].RefTable = TestsTable
 	EpidemiologicResultsTable.ForeignKeys[0].RefTable = TestsTable
 	HistoriesTable.ForeignKeys[0].RefTable = PatientsTable
-	MedicalNotesTable.ForeignKeys[0].RefTable = HistoriesTable
-	MedicalNotesTable.ForeignKeys[1].RefTable = MedicusTable
-	MedicusTable.ForeignKeys[0].RefTable = TasksTable
+	MedicalNotesTable.ForeignKeys[0].RefTable = DoctorsTable
+	MedicalNotesTable.ForeignKeys[1].RefTable = HistoriesTable
 	SchedulesTable.ForeignKeys[0].RefTable = PatientsTable
 	TasksTable.ForeignKeys[0].RefTable = SchedulesTable
 	TestsTable.ForeignKeys[0].RefTable = HistoriesTable
+	TaskResponsibleTable.ForeignKeys[0].RefTable = TasksTable
+	TaskResponsibleTable.ForeignKeys[1].RefTable = DoctorsTable
 }

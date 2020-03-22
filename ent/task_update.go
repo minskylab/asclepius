@@ -11,7 +11,7 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/minskylab/asclepius/ent/medicus"
+	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/predicate"
 	"github.com/minskylab/asclepius/ent/schedule"
 	"github.com/minskylab/asclepius/ent/task"
@@ -79,7 +79,7 @@ func (tu *TaskUpdate) ClearDescription() *TaskUpdate {
 	return tu
 }
 
-// AddResponsibleIDs adds the responsible edge to Medicus by ids.
+// AddResponsibleIDs adds the responsible edge to Doctor by ids.
 func (tu *TaskUpdate) AddResponsibleIDs(ids ...uuid.UUID) *TaskUpdate {
 	if tu.responsible == nil {
 		tu.responsible = make(map[uuid.UUID]struct{})
@@ -90,11 +90,11 @@ func (tu *TaskUpdate) AddResponsibleIDs(ids ...uuid.UUID) *TaskUpdate {
 	return tu
 }
 
-// AddResponsible adds the responsible edges to Medicus.
-func (tu *TaskUpdate) AddResponsible(m ...*Medicus) *TaskUpdate {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+// AddResponsible adds the responsible edges to Doctor.
+func (tu *TaskUpdate) AddResponsible(d ...*Doctor) *TaskUpdate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
 	}
 	return tu.AddResponsibleIDs(ids...)
 }
@@ -121,7 +121,7 @@ func (tu *TaskUpdate) SetSchedule(s *Schedule) *TaskUpdate {
 	return tu.SetScheduleID(s.ID)
 }
 
-// RemoveResponsibleIDs removes the responsible edge to Medicus by ids.
+// RemoveResponsibleIDs removes the responsible edge to Doctor by ids.
 func (tu *TaskUpdate) RemoveResponsibleIDs(ids ...uuid.UUID) *TaskUpdate {
 	if tu.removedResponsible == nil {
 		tu.removedResponsible = make(map[uuid.UUID]struct{})
@@ -132,11 +132,11 @@ func (tu *TaskUpdate) RemoveResponsibleIDs(ids ...uuid.UUID) *TaskUpdate {
 	return tu
 }
 
-// RemoveResponsible removes responsible edges to Medicus.
-func (tu *TaskUpdate) RemoveResponsible(m ...*Medicus) *TaskUpdate {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+// RemoveResponsible removes responsible edges to Doctor.
+func (tu *TaskUpdate) RemoveResponsible(d ...*Doctor) *TaskUpdate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
 	}
 	return tu.RemoveResponsibleIDs(ids...)
 }
@@ -224,15 +224,15 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := tu.removedResponsible; len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   task.ResponsibleTable,
-			Columns: []string{task.ResponsibleColumn},
+			Columns: task.ResponsiblePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}
@@ -243,15 +243,15 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := tu.responsible; len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   task.ResponsibleTable,
-			Columns: []string{task.ResponsibleColumn},
+			Columns: task.ResponsiblePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}
@@ -362,7 +362,7 @@ func (tuo *TaskUpdateOne) ClearDescription() *TaskUpdateOne {
 	return tuo
 }
 
-// AddResponsibleIDs adds the responsible edge to Medicus by ids.
+// AddResponsibleIDs adds the responsible edge to Doctor by ids.
 func (tuo *TaskUpdateOne) AddResponsibleIDs(ids ...uuid.UUID) *TaskUpdateOne {
 	if tuo.responsible == nil {
 		tuo.responsible = make(map[uuid.UUID]struct{})
@@ -373,11 +373,11 @@ func (tuo *TaskUpdateOne) AddResponsibleIDs(ids ...uuid.UUID) *TaskUpdateOne {
 	return tuo
 }
 
-// AddResponsible adds the responsible edges to Medicus.
-func (tuo *TaskUpdateOne) AddResponsible(m ...*Medicus) *TaskUpdateOne {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+// AddResponsible adds the responsible edges to Doctor.
+func (tuo *TaskUpdateOne) AddResponsible(d ...*Doctor) *TaskUpdateOne {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
 	}
 	return tuo.AddResponsibleIDs(ids...)
 }
@@ -404,7 +404,7 @@ func (tuo *TaskUpdateOne) SetSchedule(s *Schedule) *TaskUpdateOne {
 	return tuo.SetScheduleID(s.ID)
 }
 
-// RemoveResponsibleIDs removes the responsible edge to Medicus by ids.
+// RemoveResponsibleIDs removes the responsible edge to Doctor by ids.
 func (tuo *TaskUpdateOne) RemoveResponsibleIDs(ids ...uuid.UUID) *TaskUpdateOne {
 	if tuo.removedResponsible == nil {
 		tuo.removedResponsible = make(map[uuid.UUID]struct{})
@@ -415,11 +415,11 @@ func (tuo *TaskUpdateOne) RemoveResponsibleIDs(ids ...uuid.UUID) *TaskUpdateOne 
 	return tuo
 }
 
-// RemoveResponsible removes responsible edges to Medicus.
-func (tuo *TaskUpdateOne) RemoveResponsible(m ...*Medicus) *TaskUpdateOne {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+// RemoveResponsible removes responsible edges to Doctor.
+func (tuo *TaskUpdateOne) RemoveResponsible(d ...*Doctor) *TaskUpdateOne {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
 	}
 	return tuo.RemoveResponsibleIDs(ids...)
 }
@@ -501,15 +501,15 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (t *Task, err error) {
 	}
 	if nodes := tuo.removedResponsible; len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   task.ResponsibleTable,
-			Columns: []string{task.ResponsibleColumn},
+			Columns: task.ResponsiblePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}
@@ -520,15 +520,15 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (t *Task, err error) {
 	}
 	if nodes := tuo.responsible; len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   task.ResponsibleTable,
-			Columns: []string{task.ResponsibleColumn},
+			Columns: task.ResponsiblePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}

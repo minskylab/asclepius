@@ -280,19 +280,19 @@ func HasResponsible() predicate.Task {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(ResponsibleTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ResponsibleTable, ResponsibleColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ResponsibleTable, ResponsiblePrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
 // HasResponsibleWith applies the HasEdge predicate on the "responsible" edge with a given conditions (other predicates).
-func HasResponsibleWith(preds ...predicate.Medicus) predicate.Task {
+func HasResponsibleWith(preds ...predicate.Doctor) predicate.Task {
 	return predicate.Task(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(ResponsibleInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ResponsibleTable, ResponsibleColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ResponsibleTable, ResponsiblePrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

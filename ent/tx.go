@@ -16,14 +16,14 @@ type Tx struct {
 	Alert *AlertClient
 	// ClinicalResults is the client for interacting with the ClinicalResults builders.
 	ClinicalResults *ClinicalResultsClient
+	// Doctor is the client for interacting with the Doctor builders.
+	Doctor *DoctorClient
 	// EpidemiologicResults is the client for interacting with the EpidemiologicResults builders.
 	EpidemiologicResults *EpidemiologicResultsClient
 	// History is the client for interacting with the History builders.
 	History *HistoryClient
 	// MedicalNote is the client for interacting with the MedicalNote builders.
 	MedicalNote *MedicalNoteClient
-	// Medicus is the client for interacting with the Medicus builders.
-	Medicus *MedicusClient
 	// Patient is the client for interacting with the Patient builders.
 	Patient *PatientClient
 	// Schedule is the client for interacting with the Schedule builders.
@@ -51,10 +51,10 @@ func (tx *Tx) Client() *Client {
 		Schema:               migrate.NewSchema(tx.driver),
 		Alert:                NewAlertClient(tx.config),
 		ClinicalResults:      NewClinicalResultsClient(tx.config),
+		Doctor:               NewDoctorClient(tx.config),
 		EpidemiologicResults: NewEpidemiologicResultsClient(tx.config),
 		History:              NewHistoryClient(tx.config),
 		MedicalNote:          NewMedicalNoteClient(tx.config),
-		Medicus:              NewMedicusClient(tx.config),
 		Patient:              NewPatientClient(tx.config),
 		Schedule:             NewScheduleClient(tx.config),
 		Task:                 NewTaskClient(tx.config),

@@ -10,9 +10,9 @@ import (
 
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/history"
 	"github.com/minskylab/asclepius/ent/medicalnote"
-	"github.com/minskylab/asclepius/ent/medicus"
 )
 
 // MedicalNote is the model entity for the MedicalNote schema.
@@ -31,8 +31,8 @@ type MedicalNote struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MedicalNoteQuery when eager-loading is set.
 	Edges         MedicalNoteEdges `json:"edges"`
+	doctor_notes  *uuid.UUID
 	history_notes *uuid.UUID
-	medicus_notes *uuid.UUID
 }
 
 // MedicalNoteEdges holds the relations/edges for other nodes in the graph.
@@ -40,7 +40,7 @@ type MedicalNoteEdges struct {
 	// History holds the value of the history edge.
 	History *History
 	// Owner holds the value of the owner edge.
-	Owner *Medicus
+	Owner *Doctor
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -62,12 +62,12 @@ func (e MedicalNoteEdges) HistoryOrErr() (*History, error) {
 
 // OwnerOrErr returns the Owner value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e MedicalNoteEdges) OwnerOrErr() (*Medicus, error) {
+func (e MedicalNoteEdges) OwnerOrErr() (*Doctor, error) {
 	if e.loadedTypes[1] {
 		if e.Owner == nil {
 			// The edge owner was loaded in eager-loading,
 			// but was not found.
-			return nil, &NotFoundError{label: medicus.Label}
+			return nil, &NotFoundError{label: doctor.Label}
 		}
 		return e.Owner, nil
 	}
@@ -88,8 +88,8 @@ func (*MedicalNote) scanValues() []interface{} {
 // fkValues returns the types for scanning foreign-keys values from sql.Rows.
 func (*MedicalNote) fkValues() []interface{} {
 	return []interface{}{
+		&uuid.UUID{}, // doctor_notes
 		&uuid.UUID{}, // history_notes
-		&uuid.UUID{}, // medicus_notes
 	}
 }
 
@@ -134,14 +134,14 @@ func (mn *MedicalNote) assignValues(values ...interface{}) error {
 	values = values[4:]
 	if len(values) == len(medicalnote.ForeignKeys) {
 		if value, ok := values[0].(*uuid.UUID); !ok {
+			return fmt.Errorf("unexpected type %T for field doctor_notes", values[0])
+		} else if value != nil {
+			mn.doctor_notes = value
+		}
+		if value, ok := values[0].(*uuid.UUID); !ok {
 			return fmt.Errorf("unexpected type %T for field history_notes", values[0])
 		} else if value != nil {
 			mn.history_notes = value
-		}
-		if value, ok := values[0].(*uuid.UUID); !ok {
-			return fmt.Errorf("unexpected type %T for field medicus_notes", values[0])
-		} else if value != nil {
-			mn.medicus_notes = value
 		}
 	}
 	return nil
@@ -153,7 +153,7 @@ func (mn *MedicalNote) QueryHistory() *HistoryQuery {
 }
 
 // QueryOwner queries the owner edge of the MedicalNote.
-func (mn *MedicalNote) QueryOwner() *MedicusQuery {
+func (mn *MedicalNote) QueryOwner() *DoctorQuery {
 	return (&MedicalNoteClient{config: mn.config}).QueryOwner(mn)
 }
 

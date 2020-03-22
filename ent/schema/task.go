@@ -32,7 +32,7 @@ func (Task) Fields() []ent.Field {
 // Edges of the Task.
 func (Task) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("responsible", Medicus.Type),
+		edge.To("responsible", Doctor.Type),
 		edge.From("schedule", Schedule.Type).Ref("tasks").Unique(),
 	}
 }

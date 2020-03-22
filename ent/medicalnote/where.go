@@ -315,7 +315,7 @@ func HasOwner() predicate.MedicalNote {
 }
 
 // HasOwnerWith applies the HasEdge predicate on the "owner" edge with a given conditions (other predicates).
-func HasOwnerWith(preds ...predicate.Medicus) predicate.MedicalNote {
+func HasOwnerWith(preds ...predicate.Doctor) predicate.MedicalNote {
 	return predicate.MedicalNote(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),

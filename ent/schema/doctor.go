@@ -9,13 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// Medicus holds the schema definition for the Medicus entity.
-type Medicus struct {
+// Doctor holds the schema definition for the Doctor entity.
+type Doctor struct {
 	ent.Schema
 }
 
-// Fields of the Medicus.
-func (Medicus) Fields() []ent.Field {
+// Fields of the Doctor.
+func (Doctor) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}),
 		field.Strings("name"),
@@ -29,9 +29,10 @@ func (Medicus) Fields() []ent.Field {
 	}
 }
 
-// Edges of the Medicus.
-func (Medicus) Edges() []ent.Edge {
+// Edges of the Doctor.
+func (Doctor) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("notes", MedicalNote.Type),
+		edge.From("tasks", Task.Type).Ref("responsible"),
 	}
 }

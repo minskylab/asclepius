@@ -12,6 +12,9 @@ type Alert func(*sql.Selector)
 // ClinicalResults is the predicate function for clinicalresults builders.
 type ClinicalResults func(*sql.Selector)
 
+// Doctor is the predicate function for doctor builders.
+type Doctor func(*sql.Selector)
+
 // EpidemiologicResults is the predicate function for epidemiologicresults builders.
 type EpidemiologicResults func(*sql.Selector)
 
@@ -20,9 +23,6 @@ type History func(*sql.Selector)
 
 // MedicalNote is the predicate function for medicalnote builders.
 type MedicalNote func(*sql.Selector)
-
-// Medicus is the predicate function for medicus builders.
-type Medicus func(*sql.Selector)
 
 // Patient is the predicate function for patient builders.
 type Patient func(*sql.Selector)

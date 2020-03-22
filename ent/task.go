@@ -36,7 +36,7 @@ type Task struct {
 // TaskEdges holds the relations/edges for other nodes in the graph.
 type TaskEdges struct {
 	// Responsible holds the value of the responsible edge.
-	Responsible []*Medicus
+	Responsible []*Doctor
 	// Schedule holds the value of the schedule edge.
 	Schedule *Schedule
 	// loadedTypes holds the information for reporting if a
@@ -46,7 +46,7 @@ type TaskEdges struct {
 
 // ResponsibleOrErr returns the Responsible value or an error if the edge
 // was not loaded in eager-loading.
-func (e TaskEdges) ResponsibleOrErr() ([]*Medicus, error) {
+func (e TaskEdges) ResponsibleOrErr() ([]*Doctor, error) {
 	if e.loadedTypes[0] {
 		return e.Responsible, nil
 	}
@@ -135,7 +135,7 @@ func (t *Task) assignValues(values ...interface{}) error {
 }
 
 // QueryResponsible queries the responsible edge of the Task.
-func (t *Task) QueryResponsible() *MedicusQuery {
+func (t *Task) QueryResponsible() *DoctorQuery {
 	return (&TaskClient{config: t.config}).QueryResponsible(t)
 }
 

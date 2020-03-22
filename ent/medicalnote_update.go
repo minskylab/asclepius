@@ -11,9 +11,9 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/history"
 	"github.com/minskylab/asclepius/ent/medicalnote"
-	"github.com/minskylab/asclepius/ent/medicus"
 	"github.com/minskylab/asclepius/ent/predicate"
 )
 
@@ -107,7 +107,7 @@ func (mnu *MedicalNoteUpdate) SetHistory(h *History) *MedicalNoteUpdate {
 	return mnu.SetHistoryID(h.ID)
 }
 
-// SetOwnerID sets the owner edge to Medicus by id.
+// SetOwnerID sets the owner edge to Doctor by id.
 func (mnu *MedicalNoteUpdate) SetOwnerID(id uuid.UUID) *MedicalNoteUpdate {
 	if mnu.owner == nil {
 		mnu.owner = make(map[uuid.UUID]struct{})
@@ -116,7 +116,7 @@ func (mnu *MedicalNoteUpdate) SetOwnerID(id uuid.UUID) *MedicalNoteUpdate {
 	return mnu
 }
 
-// SetNillableOwnerID sets the owner edge to Medicus by id if the given value is not nil.
+// SetNillableOwnerID sets the owner edge to Doctor by id if the given value is not nil.
 func (mnu *MedicalNoteUpdate) SetNillableOwnerID(id *uuid.UUID) *MedicalNoteUpdate {
 	if id != nil {
 		mnu = mnu.SetOwnerID(*id)
@@ -124,9 +124,9 @@ func (mnu *MedicalNoteUpdate) SetNillableOwnerID(id *uuid.UUID) *MedicalNoteUpda
 	return mnu
 }
 
-// SetOwner sets the owner edge to Medicus.
-func (mnu *MedicalNoteUpdate) SetOwner(m *Medicus) *MedicalNoteUpdate {
-	return mnu.SetOwnerID(m.ID)
+// SetOwner sets the owner edge to Doctor.
+func (mnu *MedicalNoteUpdate) SetOwner(d *Doctor) *MedicalNoteUpdate {
+	return mnu.SetOwnerID(d.ID)
 }
 
 // ClearHistory clears the history edge to History.
@@ -135,7 +135,7 @@ func (mnu *MedicalNoteUpdate) ClearHistory() *MedicalNoteUpdate {
 	return mnu
 }
 
-// ClearOwner clears the owner edge to Medicus.
+// ClearOwner clears the owner edge to Doctor.
 func (mnu *MedicalNoteUpdate) ClearOwner() *MedicalNoteUpdate {
 	mnu.clearedOwner = true
 	return mnu
@@ -271,7 +271,7 @@ func (mnu *MedicalNoteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}
@@ -287,7 +287,7 @@ func (mnu *MedicalNoteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}
@@ -391,7 +391,7 @@ func (mnuo *MedicalNoteUpdateOne) SetHistory(h *History) *MedicalNoteUpdateOne {
 	return mnuo.SetHistoryID(h.ID)
 }
 
-// SetOwnerID sets the owner edge to Medicus by id.
+// SetOwnerID sets the owner edge to Doctor by id.
 func (mnuo *MedicalNoteUpdateOne) SetOwnerID(id uuid.UUID) *MedicalNoteUpdateOne {
 	if mnuo.owner == nil {
 		mnuo.owner = make(map[uuid.UUID]struct{})
@@ -400,7 +400,7 @@ func (mnuo *MedicalNoteUpdateOne) SetOwnerID(id uuid.UUID) *MedicalNoteUpdateOne
 	return mnuo
 }
 
-// SetNillableOwnerID sets the owner edge to Medicus by id if the given value is not nil.
+// SetNillableOwnerID sets the owner edge to Doctor by id if the given value is not nil.
 func (mnuo *MedicalNoteUpdateOne) SetNillableOwnerID(id *uuid.UUID) *MedicalNoteUpdateOne {
 	if id != nil {
 		mnuo = mnuo.SetOwnerID(*id)
@@ -408,9 +408,9 @@ func (mnuo *MedicalNoteUpdateOne) SetNillableOwnerID(id *uuid.UUID) *MedicalNote
 	return mnuo
 }
 
-// SetOwner sets the owner edge to Medicus.
-func (mnuo *MedicalNoteUpdateOne) SetOwner(m *Medicus) *MedicalNoteUpdateOne {
-	return mnuo.SetOwnerID(m.ID)
+// SetOwner sets the owner edge to Doctor.
+func (mnuo *MedicalNoteUpdateOne) SetOwner(d *Doctor) *MedicalNoteUpdateOne {
+	return mnuo.SetOwnerID(d.ID)
 }
 
 // ClearHistory clears the history edge to History.
@@ -419,7 +419,7 @@ func (mnuo *MedicalNoteUpdateOne) ClearHistory() *MedicalNoteUpdateOne {
 	return mnuo
 }
 
-// ClearOwner clears the owner edge to Medicus.
+// ClearOwner clears the owner edge to Doctor.
 func (mnuo *MedicalNoteUpdateOne) ClearOwner() *MedicalNoteUpdateOne {
 	mnuo.clearedOwner = true
 	return mnuo
@@ -549,7 +549,7 @@ func (mnuo *MedicalNoteUpdateOne) sqlSave(ctx context.Context) (mn *MedicalNote,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}
@@ -565,7 +565,7 @@ func (mnuo *MedicalNoteUpdateOne) sqlSave(ctx context.Context) (mn *MedicalNote,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}

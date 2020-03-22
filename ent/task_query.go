@@ -13,7 +13,7 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/minskylab/asclepius/ent/medicus"
+	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/predicate"
 	"github.com/minskylab/asclepius/ent/schedule"
 	"github.com/minskylab/asclepius/ent/task"
@@ -28,7 +28,7 @@ type TaskQuery struct {
 	unique     []string
 	predicates []predicate.Task
 	// eager-loading edges.
-	withResponsible *MedicusQuery
+	withResponsible *DoctorQuery
 	withSchedule    *ScheduleQuery
 	withFKs         bool
 	// intermediate query.
@@ -60,12 +60,12 @@ func (tq *TaskQuery) Order(o ...Order) *TaskQuery {
 }
 
 // QueryResponsible chains the current query on the responsible edge.
-func (tq *TaskQuery) QueryResponsible() *MedicusQuery {
-	query := &MedicusQuery{config: tq.config}
+func (tq *TaskQuery) QueryResponsible() *DoctorQuery {
+	query := &DoctorQuery{config: tq.config}
 	step := sqlgraph.NewStep(
 		sqlgraph.From(task.Table, task.FieldID, tq.sqlQuery()),
-		sqlgraph.To(medicus.Table, medicus.FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, task.ResponsibleTable, task.ResponsibleColumn),
+		sqlgraph.To(doctor.Table, doctor.FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, task.ResponsibleTable, task.ResponsiblePrimaryKey...),
 	)
 	query.sql = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
 	return query
@@ -254,8 +254,8 @@ func (tq *TaskQuery) Clone() *TaskQuery {
 
 //  WithResponsible tells the query-builder to eager-loads the nodes that are connected to
 // the "responsible" edge. The optional arguments used to configure the query builder of the edge.
-func (tq *TaskQuery) WithResponsible(opts ...func(*MedicusQuery)) *TaskQuery {
-	query := &MedicusQuery{config: tq.config}
+func (tq *TaskQuery) WithResponsible(opts ...func(*DoctorQuery)) *TaskQuery {
+	query := &DoctorQuery{config: tq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -357,29 +357,64 @@ func (tq *TaskQuery) sqlAll(ctx context.Context) ([]*Task, error) {
 
 	if query := tq.withResponsible; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[uuid.UUID]*Task)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
+		ids := make(map[uuid.UUID]*Task, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
 		}
-		query.withFKs = true
-		query.Where(predicate.Medicus(func(s *sql.Selector) {
-			s.Where(sql.InValues(task.ResponsibleColumn, fks...))
-		}))
+		var (
+			edgeids []uuid.UUID
+			edges   = make(map[uuid.UUID][]*Task)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: false,
+				Table:   task.ResponsibleTable,
+				Columns: task.ResponsiblePrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(task.ResponsiblePrimaryKey[0], fks...))
+			},
+
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{&uuid.UUID{}, &uuid.UUID{}}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*uuid.UUID)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*uuid.UUID)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := *eout
+				inValue := *ein
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				edgeids = append(edgeids, inValue)
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, tq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "responsible": %v`, err)
+		}
+		query.Where(doctor.IDIn(edgeids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.task_responsible
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "task_responsible" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
+			nodes, ok := edges[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "task_responsible" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected "responsible" node returned %v`, n.ID)
 			}
-			node.Edges.Responsible = append(node.Edges.Responsible, n)
+			for i := range nodes {
+				nodes[i].Edges.Responsible = append(nodes[i].Edges.Responsible, n)
+			}
 		}
 	}
 

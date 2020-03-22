@@ -24,13 +24,11 @@ const (
 
 	// Table holds the table name of the task in the database.
 	Table = "tasks"
-	// ResponsibleTable is the table the holds the responsible relation/edge.
-	ResponsibleTable = "medicus"
-	// ResponsibleInverseTable is the table name for the Medicus entity.
-	// It exists in this package in order to avoid circular dependency with the "medicus" package.
-	ResponsibleInverseTable = "medicus"
-	// ResponsibleColumn is the table column denoting the responsible relation/edge.
-	ResponsibleColumn = "task_responsible"
+	// ResponsibleTable is the table the holds the responsible relation/edge. The primary key declared below.
+	ResponsibleTable = "task_responsible"
+	// ResponsibleInverseTable is the table name for the Doctor entity.
+	// It exists in this package in order to avoid circular dependency with the "doctor" package.
+	ResponsibleInverseTable = "doctors"
 	// ScheduleTable is the table the holds the schedule relation/edge.
 	ScheduleTable = "tasks"
 	// ScheduleInverseTable is the table name for the Schedule entity.
@@ -53,6 +51,12 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"schedule_tasks",
 }
+
+var (
+	// ResponsiblePrimaryKey and ResponsibleColumn2 are the table columns denoting the
+	// primary key for the responsible relation (M2M).
+	ResponsiblePrimaryKey = []string{"task_id", "doctor_id"}
+)
 
 var (
 	fields = schema.Task{}.Fields()

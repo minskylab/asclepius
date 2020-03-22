@@ -12,10 +12,10 @@ import (
 
 	"github.com/minskylab/asclepius/ent/alert"
 	"github.com/minskylab/asclepius/ent/clinicalresults"
+	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/epidemiologicresults"
 	"github.com/minskylab/asclepius/ent/history"
 	"github.com/minskylab/asclepius/ent/medicalnote"
-	"github.com/minskylab/asclepius/ent/medicus"
 	"github.com/minskylab/asclepius/ent/patient"
 	"github.com/minskylab/asclepius/ent/schedule"
 	"github.com/minskylab/asclepius/ent/task"
@@ -35,14 +35,14 @@ type Client struct {
 	Alert *AlertClient
 	// ClinicalResults is the client for interacting with the ClinicalResults builders.
 	ClinicalResults *ClinicalResultsClient
+	// Doctor is the client for interacting with the Doctor builders.
+	Doctor *DoctorClient
 	// EpidemiologicResults is the client for interacting with the EpidemiologicResults builders.
 	EpidemiologicResults *EpidemiologicResultsClient
 	// History is the client for interacting with the History builders.
 	History *HistoryClient
 	// MedicalNote is the client for interacting with the MedicalNote builders.
 	MedicalNote *MedicalNoteClient
-	// Medicus is the client for interacting with the Medicus builders.
-	Medicus *MedicusClient
 	// Patient is the client for interacting with the Patient builders.
 	Patient *PatientClient
 	// Schedule is the client for interacting with the Schedule builders.
@@ -62,10 +62,10 @@ func NewClient(opts ...Option) *Client {
 		Schema:               migrate.NewSchema(c.driver),
 		Alert:                NewAlertClient(c),
 		ClinicalResults:      NewClinicalResultsClient(c),
+		Doctor:               NewDoctorClient(c),
 		EpidemiologicResults: NewEpidemiologicResultsClient(c),
 		History:              NewHistoryClient(c),
 		MedicalNote:          NewMedicalNoteClient(c),
-		Medicus:              NewMedicusClient(c),
 		Patient:              NewPatientClient(c),
 		Schedule:             NewScheduleClient(c),
 		Task:                 NewTaskClient(c),
@@ -103,10 +103,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		config:               cfg,
 		Alert:                NewAlertClient(cfg),
 		ClinicalResults:      NewClinicalResultsClient(cfg),
+		Doctor:               NewDoctorClient(cfg),
 		EpidemiologicResults: NewEpidemiologicResultsClient(cfg),
 		History:              NewHistoryClient(cfg),
 		MedicalNote:          NewMedicalNoteClient(cfg),
-		Medicus:              NewMedicusClient(cfg),
 		Patient:              NewPatientClient(cfg),
 		Schedule:             NewScheduleClient(cfg),
 		Task:                 NewTaskClient(cfg),
@@ -131,10 +131,10 @@ func (c *Client) Debug() *Client {
 		Schema:               migrate.NewSchema(cfg.driver),
 		Alert:                NewAlertClient(cfg),
 		ClinicalResults:      NewClinicalResultsClient(cfg),
+		Doctor:               NewDoctorClient(cfg),
 		EpidemiologicResults: NewEpidemiologicResultsClient(cfg),
 		History:              NewHistoryClient(cfg),
 		MedicalNote:          NewMedicalNoteClient(cfg),
-		Medicus:              NewMedicusClient(cfg),
 		Patient:              NewPatientClient(cfg),
 		Schedule:             NewScheduleClient(cfg),
 		Task:                 NewTaskClient(cfg),
@@ -285,6 +285,98 @@ func (c *ClinicalResultsClient) QueryTest(cr *ClinicalResults) *TestQuery {
 		sqlgraph.Edge(sqlgraph.M2O, true, clinicalresults.TestTable, clinicalresults.TestColumn),
 	)
 	query.sql = sqlgraph.Neighbors(cr.driver.Dialect(), step)
+
+	return query
+}
+
+// DoctorClient is a client for the Doctor schema.
+type DoctorClient struct {
+	config
+}
+
+// NewDoctorClient returns a client for the Doctor from the given config.
+func NewDoctorClient(c config) *DoctorClient {
+	return &DoctorClient{config: c}
+}
+
+// Create returns a create builder for Doctor.
+func (c *DoctorClient) Create() *DoctorCreate {
+	return &DoctorCreate{config: c.config}
+}
+
+// Update returns an update builder for Doctor.
+func (c *DoctorClient) Update() *DoctorUpdate {
+	return &DoctorUpdate{config: c.config}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DoctorClient) UpdateOne(d *Doctor) *DoctorUpdateOne {
+	return c.UpdateOneID(d.ID)
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DoctorClient) UpdateOneID(id uuid.UUID) *DoctorUpdateOne {
+	return &DoctorUpdateOne{config: c.config, id: id}
+}
+
+// Delete returns a delete builder for Doctor.
+func (c *DoctorClient) Delete() *DoctorDelete {
+	return &DoctorDelete{config: c.config}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *DoctorClient) DeleteOne(d *Doctor) *DoctorDeleteOne {
+	return c.DeleteOneID(d.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *DoctorClient) DeleteOneID(id uuid.UUID) *DoctorDeleteOne {
+	return &DoctorDeleteOne{c.Delete().Where(doctor.ID(id))}
+}
+
+// Create returns a query builder for Doctor.
+func (c *DoctorClient) Query() *DoctorQuery {
+	return &DoctorQuery{config: c.config}
+}
+
+// Get returns a Doctor entity by its id.
+func (c *DoctorClient) Get(ctx context.Context, id uuid.UUID) (*Doctor, error) {
+	return c.Query().Where(doctor.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DoctorClient) GetX(ctx context.Context, id uuid.UUID) *Doctor {
+	d, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
+// QueryNotes queries the notes edge of a Doctor.
+func (c *DoctorClient) QueryNotes(d *Doctor) *MedicalNoteQuery {
+	query := &MedicalNoteQuery{config: c.config}
+	id := d.ID
+	step := sqlgraph.NewStep(
+		sqlgraph.From(doctor.Table, doctor.FieldID, id),
+		sqlgraph.To(medicalnote.Table, medicalnote.FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, doctor.NotesTable, doctor.NotesColumn),
+	)
+	query.sql = sqlgraph.Neighbors(d.driver.Dialect(), step)
+
+	return query
+}
+
+// QueryTasks queries the tasks edge of a Doctor.
+func (c *DoctorClient) QueryTasks(d *Doctor) *TaskQuery {
+	query := &TaskQuery{config: c.config}
+	id := d.ID
+	step := sqlgraph.NewStep(
+		sqlgraph.From(doctor.Table, doctor.FieldID, id),
+		sqlgraph.To(task.Table, task.FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, doctor.TasksTable, doctor.TasksPrimaryKey...),
+	)
+	query.sql = sqlgraph.Neighbors(d.driver.Dialect(), step)
 
 	return query
 }
@@ -552,93 +644,15 @@ func (c *MedicalNoteClient) QueryHistory(mn *MedicalNote) *HistoryQuery {
 }
 
 // QueryOwner queries the owner edge of a MedicalNote.
-func (c *MedicalNoteClient) QueryOwner(mn *MedicalNote) *MedicusQuery {
-	query := &MedicusQuery{config: c.config}
+func (c *MedicalNoteClient) QueryOwner(mn *MedicalNote) *DoctorQuery {
+	query := &DoctorQuery{config: c.config}
 	id := mn.ID
 	step := sqlgraph.NewStep(
 		sqlgraph.From(medicalnote.Table, medicalnote.FieldID, id),
-		sqlgraph.To(medicus.Table, medicus.FieldID),
+		sqlgraph.To(doctor.Table, doctor.FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, medicalnote.OwnerTable, medicalnote.OwnerColumn),
 	)
 	query.sql = sqlgraph.Neighbors(mn.driver.Dialect(), step)
-
-	return query
-}
-
-// MedicusClient is a client for the Medicus schema.
-type MedicusClient struct {
-	config
-}
-
-// NewMedicusClient returns a client for the Medicus from the given config.
-func NewMedicusClient(c config) *MedicusClient {
-	return &MedicusClient{config: c}
-}
-
-// Create returns a create builder for Medicus.
-func (c *MedicusClient) Create() *MedicusCreate {
-	return &MedicusCreate{config: c.config}
-}
-
-// Update returns an update builder for Medicus.
-func (c *MedicusClient) Update() *MedicusUpdate {
-	return &MedicusUpdate{config: c.config}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *MedicusClient) UpdateOne(m *Medicus) *MedicusUpdateOne {
-	return c.UpdateOneID(m.ID)
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *MedicusClient) UpdateOneID(id uuid.UUID) *MedicusUpdateOne {
-	return &MedicusUpdateOne{config: c.config, id: id}
-}
-
-// Delete returns a delete builder for Medicus.
-func (c *MedicusClient) Delete() *MedicusDelete {
-	return &MedicusDelete{config: c.config}
-}
-
-// DeleteOne returns a delete builder for the given entity.
-func (c *MedicusClient) DeleteOne(m *Medicus) *MedicusDeleteOne {
-	return c.DeleteOneID(m.ID)
-}
-
-// DeleteOneID returns a delete builder for the given id.
-func (c *MedicusClient) DeleteOneID(id uuid.UUID) *MedicusDeleteOne {
-	return &MedicusDeleteOne{c.Delete().Where(medicus.ID(id))}
-}
-
-// Create returns a query builder for Medicus.
-func (c *MedicusClient) Query() *MedicusQuery {
-	return &MedicusQuery{config: c.config}
-}
-
-// Get returns a Medicus entity by its id.
-func (c *MedicusClient) Get(ctx context.Context, id uuid.UUID) (*Medicus, error) {
-	return c.Query().Where(medicus.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *MedicusClient) GetX(ctx context.Context, id uuid.UUID) *Medicus {
-	m, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return m
-}
-
-// QueryNotes queries the notes edge of a Medicus.
-func (c *MedicusClient) QueryNotes(m *Medicus) *MedicalNoteQuery {
-	query := &MedicalNoteQuery{config: c.config}
-	id := m.ID
-	step := sqlgraph.NewStep(
-		sqlgraph.From(medicus.Table, medicus.FieldID, id),
-		sqlgraph.To(medicalnote.Table, medicalnote.FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, medicus.NotesTable, medicus.NotesColumn),
-	)
-	query.sql = sqlgraph.Neighbors(m.driver.Dialect(), step)
 
 	return query
 }
@@ -892,13 +906,13 @@ func (c *TaskClient) GetX(ctx context.Context, id uuid.UUID) *Task {
 }
 
 // QueryResponsible queries the responsible edge of a Task.
-func (c *TaskClient) QueryResponsible(t *Task) *MedicusQuery {
-	query := &MedicusQuery{config: c.config}
+func (c *TaskClient) QueryResponsible(t *Task) *DoctorQuery {
+	query := &DoctorQuery{config: c.config}
 	id := t.ID
 	step := sqlgraph.NewStep(
 		sqlgraph.From(task.Table, task.FieldID, id),
-		sqlgraph.To(medicus.Table, medicus.FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, task.ResponsibleTable, task.ResponsibleColumn),
+		sqlgraph.To(doctor.Table, doctor.FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, task.ResponsibleTable, task.ResponsiblePrimaryKey...),
 	)
 	query.sql = sqlgraph.Neighbors(t.driver.Dialect(), step)
 

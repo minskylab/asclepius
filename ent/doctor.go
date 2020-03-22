@@ -10,11 +10,11 @@ import (
 
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/google/uuid"
-	"github.com/minskylab/asclepius/ent/medicus"
+	"github.com/minskylab/asclepius/ent/doctor"
 )
 
-// Medicus is the model entity for the Medicus schema.
-type Medicus struct {
+// Doctor is the model entity for the Doctor schema.
+type Doctor struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
@@ -25,37 +25,47 @@ type Medicus struct {
 	// Phone holds the value of the "phone" field.
 	Phone string `json:"phone,omitempty"`
 	// State holds the value of the "state" field.
-	State medicus.State `json:"state,omitempty"`
+	State doctor.State `json:"state,omitempty"`
 	// LastConnection holds the value of the "lastConnection" field.
 	LastConnection time.Time `json:"lastConnection,omitempty"`
 	// Volunteer holds the value of the "volunteer" field.
 	Volunteer bool `json:"volunteer,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the MedicusQuery when eager-loading is set.
-	Edges            MedicusEdges `json:"edges"`
-	task_responsible *uuid.UUID
+	// The values are being populated by the DoctorQuery when eager-loading is set.
+	Edges DoctorEdges `json:"edges"`
 }
 
-// MedicusEdges holds the relations/edges for other nodes in the graph.
-type MedicusEdges struct {
+// DoctorEdges holds the relations/edges for other nodes in the graph.
+type DoctorEdges struct {
 	// Notes holds the value of the notes edge.
 	Notes []*MedicalNote
+	// Tasks holds the value of the tasks edge.
+	Tasks []*Task
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // NotesOrErr returns the Notes value or an error if the edge
 // was not loaded in eager-loading.
-func (e MedicusEdges) NotesOrErr() ([]*MedicalNote, error) {
+func (e DoctorEdges) NotesOrErr() ([]*MedicalNote, error) {
 	if e.loadedTypes[0] {
 		return e.Notes, nil
 	}
 	return nil, &NotLoadedError{edge: "notes"}
 }
 
+// TasksOrErr returns the Tasks value or an error if the edge
+// was not loaded in eager-loading.
+func (e DoctorEdges) TasksOrErr() ([]*Task, error) {
+	if e.loadedTypes[1] {
+		return e.Tasks, nil
+	}
+	return nil, &NotLoadedError{edge: "tasks"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Medicus) scanValues() []interface{} {
+func (*Doctor) scanValues() []interface{} {
 	return []interface{}{
 		&uuid.UUID{},      // id
 		&[]byte{},         // name
@@ -67,118 +77,108 @@ func (*Medicus) scanValues() []interface{} {
 	}
 }
 
-// fkValues returns the types for scanning foreign-keys values from sql.Rows.
-func (*Medicus) fkValues() []interface{} {
-	return []interface{}{
-		&uuid.UUID{}, // task_responsible
-	}
-}
-
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Medicus fields.
-func (m *Medicus) assignValues(values ...interface{}) error {
-	if m, n := len(values), len(medicus.Columns); m < n {
+// to the Doctor fields.
+func (d *Doctor) assignValues(values ...interface{}) error {
+	if m, n := len(values), len(doctor.Columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	if value, ok := values[0].(*uuid.UUID); !ok {
 		return fmt.Errorf("unexpected type %T for field id", values[0])
 	} else if value != nil {
-		m.ID = *value
+		d.ID = *value
 	}
 	values = values[1:]
 
 	if value, ok := values[0].(*[]byte); !ok {
 		return fmt.Errorf("unexpected type %T for field name", values[0])
 	} else if value != nil && len(*value) > 0 {
-		if err := json.Unmarshal(*value, &m.Name); err != nil {
+		if err := json.Unmarshal(*value, &d.Name); err != nil {
 			return fmt.Errorf("unmarshal field name: %v", err)
 		}
 	}
 	if value, ok := values[1].(*sql.NullString); !ok {
 		return fmt.Errorf("unexpected type %T for field email", values[1])
 	} else if value.Valid {
-		m.Email = value.String
+		d.Email = value.String
 	}
 	if value, ok := values[2].(*sql.NullString); !ok {
 		return fmt.Errorf("unexpected type %T for field phone", values[2])
 	} else if value.Valid {
-		m.Phone = value.String
+		d.Phone = value.String
 	}
 	if value, ok := values[3].(*sql.NullString); !ok {
 		return fmt.Errorf("unexpected type %T for field state", values[3])
 	} else if value.Valid {
-		m.State = medicus.State(value.String)
+		d.State = doctor.State(value.String)
 	}
 	if value, ok := values[4].(*sql.NullTime); !ok {
 		return fmt.Errorf("unexpected type %T for field lastConnection", values[4])
 	} else if value.Valid {
-		m.LastConnection = value.Time
+		d.LastConnection = value.Time
 	}
 	if value, ok := values[5].(*sql.NullBool); !ok {
 		return fmt.Errorf("unexpected type %T for field volunteer", values[5])
 	} else if value.Valid {
-		m.Volunteer = value.Bool
-	}
-	values = values[6:]
-	if len(values) == len(medicus.ForeignKeys) {
-		if value, ok := values[0].(*uuid.UUID); !ok {
-			return fmt.Errorf("unexpected type %T for field task_responsible", values[0])
-		} else if value != nil {
-			m.task_responsible = value
-		}
+		d.Volunteer = value.Bool
 	}
 	return nil
 }
 
-// QueryNotes queries the notes edge of the Medicus.
-func (m *Medicus) QueryNotes() *MedicalNoteQuery {
-	return (&MedicusClient{config: m.config}).QueryNotes(m)
+// QueryNotes queries the notes edge of the Doctor.
+func (d *Doctor) QueryNotes() *MedicalNoteQuery {
+	return (&DoctorClient{config: d.config}).QueryNotes(d)
 }
 
-// Update returns a builder for updating this Medicus.
-// Note that, you need to call Medicus.Unwrap() before calling this method, if this Medicus
+// QueryTasks queries the tasks edge of the Doctor.
+func (d *Doctor) QueryTasks() *TaskQuery {
+	return (&DoctorClient{config: d.config}).QueryTasks(d)
+}
+
+// Update returns a builder for updating this Doctor.
+// Note that, you need to call Doctor.Unwrap() before calling this method, if this Doctor
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (m *Medicus) Update() *MedicusUpdateOne {
-	return (&MedicusClient{config: m.config}).UpdateOne(m)
+func (d *Doctor) Update() *DoctorUpdateOne {
+	return (&DoctorClient{config: d.config}).UpdateOne(d)
 }
 
 // Unwrap unwraps the entity that was returned from a transaction after it was closed,
 // so that all next queries will be executed through the driver which created the transaction.
-func (m *Medicus) Unwrap() *Medicus {
-	tx, ok := m.config.driver.(*txDriver)
+func (d *Doctor) Unwrap() *Doctor {
+	tx, ok := d.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Medicus is not a transactional entity")
+		panic("ent: Doctor is not a transactional entity")
 	}
-	m.config.driver = tx.drv
-	return m
+	d.config.driver = tx.drv
+	return d
 }
 
 // String implements the fmt.Stringer.
-func (m *Medicus) String() string {
+func (d *Doctor) String() string {
 	var builder strings.Builder
-	builder.WriteString("Medicus(")
-	builder.WriteString(fmt.Sprintf("id=%v", m.ID))
+	builder.WriteString("Doctor(")
+	builder.WriteString(fmt.Sprintf("id=%v", d.ID))
 	builder.WriteString(", name=")
-	builder.WriteString(fmt.Sprintf("%v", m.Name))
+	builder.WriteString(fmt.Sprintf("%v", d.Name))
 	builder.WriteString(", email=")
-	builder.WriteString(m.Email)
+	builder.WriteString(d.Email)
 	builder.WriteString(", phone=")
-	builder.WriteString(m.Phone)
+	builder.WriteString(d.Phone)
 	builder.WriteString(", state=")
-	builder.WriteString(fmt.Sprintf("%v", m.State))
+	builder.WriteString(fmt.Sprintf("%v", d.State))
 	builder.WriteString(", lastConnection=")
-	builder.WriteString(m.LastConnection.Format(time.ANSIC))
+	builder.WriteString(d.LastConnection.Format(time.ANSIC))
 	builder.WriteString(", volunteer=")
-	builder.WriteString(fmt.Sprintf("%v", m.Volunteer))
+	builder.WriteString(fmt.Sprintf("%v", d.Volunteer))
 	builder.WriteByte(')')
 	return builder.String()
 }
 
-// MedicusSlice is a parsable slice of Medicus.
-type MedicusSlice []*Medicus
+// Doctors is a parsable slice of Doctor.
+type Doctors []*Doctor
 
-func (m MedicusSlice) config(cfg config) {
-	for _i := range m {
-		m[_i].config = cfg
+func (d Doctors) config(cfg config) {
+	for _i := range d {
+		d[_i].config = cfg
 	}
 }

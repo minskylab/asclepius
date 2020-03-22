@@ -10,7 +10,7 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/minskylab/asclepius/ent/medicus"
+	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/schedule"
 	"github.com/minskylab/asclepius/ent/task"
 )
@@ -73,7 +73,7 @@ func (tc *TaskCreate) SetID(u uuid.UUID) *TaskCreate {
 	return tc
 }
 
-// AddResponsibleIDs adds the responsible edge to Medicus by ids.
+// AddResponsibleIDs adds the responsible edge to Doctor by ids.
 func (tc *TaskCreate) AddResponsibleIDs(ids ...uuid.UUID) *TaskCreate {
 	if tc.responsible == nil {
 		tc.responsible = make(map[uuid.UUID]struct{})
@@ -84,11 +84,11 @@ func (tc *TaskCreate) AddResponsibleIDs(ids ...uuid.UUID) *TaskCreate {
 	return tc
 }
 
-// AddResponsible adds the responsible edges to Medicus.
-func (tc *TaskCreate) AddResponsible(m ...*Medicus) *TaskCreate {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+// AddResponsible adds the responsible edges to Doctor.
+func (tc *TaskCreate) AddResponsible(d ...*Doctor) *TaskCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
 	}
 	return tc.AddResponsibleIDs(ids...)
 }
@@ -192,15 +192,15 @@ func (tc *TaskCreate) sqlSave(ctx context.Context) (*Task, error) {
 	}
 	if nodes := tc.responsible; len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   task.ResponsibleTable,
-			Columns: []string{task.ResponsibleColumn},
+			Columns: task.ResponsiblePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
-					Column: medicus.FieldID,
+					Column: doctor.FieldID,
 				},
 			},
 		}
