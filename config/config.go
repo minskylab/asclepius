@@ -33,7 +33,7 @@ type GlobalConfig struct {
 }
 
 
-func getGlobalConfig() (*GlobalConfig, error) {
+func getGlobalConfigFromVault() (*GlobalConfig, error) {
 	vaultAddress := os.Getenv("VAULT_ADDRESS")
 	vaultToken := os.Getenv("VAULT_TOKEN")
 
@@ -46,7 +46,7 @@ func getGlobalConfig() (*GlobalConfig, error) {
 
 	tape := client.Logical()
 
-	asclepius := "secrets/kv/asclepius"
+	asclepius := "secrets/asclepius"
 
 	messenger, err := tape.Read(asclepius + "/facebook/messenger")
 	if err != nil {
@@ -81,5 +81,5 @@ func getGlobalConfig() (*GlobalConfig, error) {
 }
 
 func LoadFromVault() (*GlobalConfig, error) {
-	return getGlobalConfig()
+	return getGlobalConfigFromVault()
 }
