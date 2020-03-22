@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
-	// log "github.com/sirupsen/logrus"
 )
 
 type MessengerConfig struct {
@@ -46,7 +45,7 @@ func getGlobalConfigFromVault() (*GlobalConfig, error) {
 
 	tape := client.Logical()
 
-	asclepius := "secrets/asclepius"
+	asclepius := "kv/data/asclepius"
 
 	messenger, err := tape.Read(asclepius + "/facebook/messenger")
 	if err != nil {
@@ -65,17 +64,32 @@ func getGlobalConfigFromVault() (*GlobalConfig, error) {
 
 	config := new(GlobalConfig)
 
-	config.Messenger.AccessToken = messenger.Data["accessToken"].(string)
-	config.Messenger.PageID = messenger.Data["pageID"].(string)
-	config.Messenger.VerifySecret = messenger.Data["verifySecret"].(string)
+	if messenger.Data["data"] != nil {
+		data := messenger.Data["data"].(map[string]interface{})
+		config.Messenger = MessengerConfig{
+			AccessToken:  data["accessToken"].(string),
+			VerifySecret: data["verifySecret"].(string),
+			PageID:       data["pageID"].(string),
+		}
+	}
 
-	config.Watson.APIKey = watson.Data["apiKey"].(string)
-	config.Watson.AssistantID = watson.Data["assistantID"].(string)
-	config.Watson.URL = watson.Data["url"].(string)
-	config.Watson.Version = watson.Data["version"].(string)
+	if watson.Data["data"] != nil {
+		data := watson.Data["data"].(map[string]interface{})
+		config.Watson = WatsonConfig{
+			URL:         data["url"].(string),
+			Version:     data["version"].(string),
+			AssistantID: data["assistantID"].(string),
+			APIKey:      data["apiKey"].(string),
+		}
+	}
 
-	config.Twilio.AccountID = twilio.Data["accountID"].(string)
-	config.Twilio.AuthToken = twilio.Data["authToken"].(string)
+	if twilio.Data["data"] != nil {
+		data := twilio.Data["data"].(map[string]interface{})
+		config.Twilio = TwilioConfig{
+			AccountID: data["accountID"].(string),
+			AuthToken: data["authToken"].(string),
+		}
+	}
 
 	return config, nil
 }

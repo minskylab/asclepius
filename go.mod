@@ -3,6 +3,7 @@ module github.com/minskylab/asclepius
 go 1.14
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/facebookincubator/ent v0.1.3
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/vault/api v1.0.4
