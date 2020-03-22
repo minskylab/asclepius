@@ -8,7 +8,8 @@ import (
 	"github.com/minskylab/asclepius/config"
 	"github.com/minskylab/asclepius/ent"
 	"github.com/pkg/errors"
-	// log "github.com/sirupsen/logrus"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type Core struct {

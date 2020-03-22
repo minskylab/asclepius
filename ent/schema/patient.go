@@ -6,7 +6,6 @@ import (
 	"github.com/facebookincubator/ent"
 	"github.com/facebookincubator/ent/schema/edge"
 	"github.com/facebookincubator/ent/schema/field"
-	"github.com/facebookincubator/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -17,7 +16,7 @@ type Patient struct {
 
 func (Patient) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("facebookID", "watsonID", "phone", "email"),
+		// index.Fields("facebookID", "watsonID", "phone", "email"),
 	}
 }
 

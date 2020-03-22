@@ -157,13 +157,6 @@ var (
 		Columns:     PatientsColumns,
 		PrimaryKey:  []*schema.Column{PatientsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{},
-		Indexes: []*schema.Index{
-			{
-				Name:    "patient_facebook_id_watson_id_phone_email",
-				Unique:  false,
-				Columns: []*schema.Column{PatientsColumns[6], PatientsColumns[7], PatientsColumns[2], PatientsColumns[4]},
-			},
-		},
 	}
 	// SchedulesColumns holds the columns for the "schedules" table.
 	SchedulesColumns = []*schema.Column{
