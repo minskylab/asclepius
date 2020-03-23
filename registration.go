@@ -251,7 +251,7 @@ func (core *Core) RegisterTestFromBot(fbID string, clinic ClinicSymptoms, epidem
 }
 
 func (core *Core) RegisterTaskFromBotPatient(fbID string, title, description string, durationTask time.Duration) (*ent.Task, error) {
-	pID, err := core.client.Patient.Query().Where(patient.FacebookIDEQ(fbID)).OnlyID(context.Background())
+	pID, err := core.client.Patient.Query().Where(patient.FacebookID(fbID)).OnlyID(context.Background())
 	if err != nil {
 		return nil, errors.Wrap(err, "error at search patient by fbID")
 	}

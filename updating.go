@@ -16,7 +16,7 @@ func (core *Core) updatePhoneOfPatient(patientID uuid.UUID, phone string) (*ent.
 }
 
 func (core *Core) UpdatePatientPhoneByFbAlias(fbID string, phone string) (*ent.Patient, error) {
-	pID, err := core.client.Patient.Query().Where(patient.FacebookIDEQ(fbID)).OnlyID(context.Background())
+	pID, err := core.client.Patient.Query().Where(patient.FacebookID(fbID)).OnlyID(context.Background())
 	if err != nil {
 		return nil, errors.Wrap(err, "error at find patient by fb alias")
 	}
