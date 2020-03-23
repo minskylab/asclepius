@@ -7,6 +7,7 @@ import (
 	"github.com/facebookincubator/ent/dialect"
 	"github.com/minskylab/asclepius/config"
 	"github.com/minskylab/asclepius/ent"
+	"github.com/minskylab/asclepius/ent/migrate"
 	"github.com/pkg/errors"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -35,12 +36,17 @@ func (core *Core) openClient(config *config.GlobalConfig) error {
 	// e.g. "root:pass@tcp(localhost:3306)/test"
 	uri :=fmt.Sprintf("%s:%s@tcp(%s)/%s", user, pass, endpoint, database)
 
-	core.client, err = ent.Open(dialect.MySQL, uri)
+	core.client, err = ent.Open(dialect.MySQL, uri )
 	if err != nil {
 		return errors.Wrap(err, "failed opening connection to mysql database")
 	}
 
-	if err = core.client.Schema.Create(context.Background()); err != nil {
+	if err = core.client.Schema.Create(
+		context.Background(),
+		migrate.WithDropIndex(true),
+		migrate.WithDropColumn(true),
+		migrate.WithGlobalUniqueID(true),
+	); err != nil {
 		return errors.Wrap(err, "error at create schema")
 	}
 	return nil
