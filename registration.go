@@ -50,6 +50,18 @@ func (core *Core) registerNewPatientFromFacebook(facebookID string, name string,
 		return nil, err
 	}
 
+	sch, err := tx.Schedule.
+		Create().
+		SetID(uuid.New()).
+		Save(context.Background())
+	if err != nil {
+		err = errors.Wrap(err, "error at try to create schedule for new patient")
+		if errTx := tx.Rollback(); errTx != nil {
+			return nil, errors.Wrap(err, "error at perform tx rollback")
+		}
+		return nil, err
+	}
+
 	p, err := tx.Patient.
 		Create().
 		SetID(uuid.New()).
@@ -58,6 +70,7 @@ func (core *Core) registerNewPatientFromFacebook(facebookID string, name string,
 		SetFacebookID(facebookID).
 		SetFirstContact(time.Now()).
 		SetHistory(h).
+		SetSchedule(sch).
 		Save(context.Background())
 	if err != nil {
 		err = errors.Wrap(err, "error at try to create a new patient")
@@ -226,6 +239,7 @@ func (core *Core) AddEpidemiologicFactorsToTest(testID string, epidemic Epidemic
 	log.WithField("testID", testID).Info("adding epidemiologic facts")
 	return core.addEpidemiologicToTest(testID, epidemic)
 }
+
 func (core *Core) RegisterPatientFromFacebook(fbID, name, phone string) (*ent.Patient, error) {
 	log.WithField("patientName", name).Info("registering new patient from facebook")
 	return core.registerNewPatientFromFacebook(fbID, name, phone)
@@ -234,4 +248,14 @@ func (core *Core) RegisterPatientFromFacebook(fbID, name, phone string) (*ent.Pa
 func (core *Core) RegisterTestFromBot(fbID string, clinic ClinicSymptoms, epidemic EpidemicConditions, notes ...string) (*ent.Test, error) {
 	log.WithField("id", fbID).Info("registering test from asclepius bot")
 	return core.registerNewTestToPatientByAlias(fbID, clinic, epidemic, notes...)
+}
+
+func (core *Core) RegisterTaskFromBotPatient(fbID string, title, description string, durationTask time.Duration) (*ent.Task, error) {
+	pID, err := core.client.Patient.Query().Where(patient.FacebookIDEQ(fbID)).OnlyID(context.Background())
+	if err != nil {
+		return nil, errors.Wrap(err, "error at search patient by fbID")
+	}
+
+	log.WithField("id", fbID).Info("registering new task with title: " + title)
+	return core.registerNewTask(pID, title, description, durationTask)
 }

@@ -30,6 +30,18 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 
 		_ = response(c, out)
 
+		go func(fbID string) {
+			if _, err := bot.core.RegisterTaskFromBotPatient(
+				fbID,
+				"Seguimiento",
+				"Este paciente necesita seguimiento personalizado, la convocatoria es" +
+					"pública para todo doctor voluntario.",
+				24 * time.Hour,
+			); err != nil {
+				log.Error(errors.Wrap(err, "error at register task from bot patient"))
+			}
+		}(c.Person.ID)
+
 		timer, err := bot.emitter.LogMeasureBySMS(phone, c.Person.Name, 15*time.Minute)
 		if err != nil {
 			return errors.Wrap(err, "error at emmit message on episodio 3 resolve")
@@ -102,6 +114,17 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 	bot.engine.ResolveAny(fb, func(c *neo.Context, in *neo.Input, out *neo.Output, response neo.OutputResponse) error {
 		c.SetContextVariable("name", c.Person.Name)
 		go func(c *neo.Context) {
+			phone := c.GetStringContextVariable("phone", "")
+			phoneSaved, _ := c.Variables["phone_saved"].(bool)
+			if phone != "" && !phoneSaved {
+				_, err := bot.core.UpdatePatientPhoneByFbAlias(c.Person.ID,phone)
+				if err != nil {
+					log.WithField("session", c.SessionID).Error(err)
+					return
+				}
+				c.SetContextVariable("phone_saved", true)
+			}
+
 			if c.Variables["identified"] != nil {
 				return
 			}
