@@ -8,6 +8,7 @@ import (
 	"github.com/minskylab/asclepius/ent"
 	"github.com/minskylab/asclepius/ent/patient"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 func (core *Core) updatePhoneOfPatient(patientID uuid.UUID, phone string) (*ent.Patient, error){
@@ -16,15 +17,16 @@ func (core *Core) updatePhoneOfPatient(patientID uuid.UUID, phone string) (*ent.
 }
 
 func (core *Core) UpdatePatientPhoneByFbAlias(fbID string, phone string) (*ent.Patient, error) {
-	pID, err := core.client.Patient.Query().Where(patient.FacebookID(fbID)).OnlyID(context.Background())
+	log.Info(fbID)
+	p, err := core.client.Patient.Query().Where(patient.FacebookID(fbID)).Only(context.Background())
 	if err != nil {
 		return nil, errors.Wrap(err, "error at find patient by fb alias")
 	}
 
-	p, err := core.updatePhoneOfPatient(pID, phone)
+	ph, err := core.updatePhoneOfPatient(p.ID, phone)
 	if err != nil {
 		return nil, errors.Wrap(err, "error at update patient phone")
 	}
 
-	return p, nil
+	return ph, nil
 }

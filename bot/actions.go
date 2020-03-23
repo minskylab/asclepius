@@ -117,7 +117,7 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 			phone := c.GetStringContextVariable("phone", "")
 			phoneSaved, _ := c.Variables["phone_saved"].(bool)
 			if phone != "" && !phoneSaved {
-				_, err := bot.core.UpdatePatientPhoneByFbAlias(c.Person.ID,phone)
+				_, err := bot.core.UpdatePatientPhoneByFbAlias(c.Person.ID, phone)
 				if err != nil {
 					log.WithField("session", c.SessionID).Error(err)
 					return
@@ -129,13 +129,13 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 				return
 			}
 
-			sID, fbID, name, phone := c.SessionID, c.Person.ID, c.Person.Name, c.GetStringContextVariable("phone", "+51000000000")
+			phone = c.GetStringContextVariable("phone", "+51000000000")
 
-			log.WithField("session", sID).Info("verifying if user exist")
+			log.WithField("session", c.SessionID).Info("verifying if user exist")
 
-			isPatient, err := bot.core.UserOfFacebookIsPatient(fbID)
+			isPatient, err := bot.core.UserOfFacebookIsPatient(c.Person.ID)
 			if err != nil {
-				log.WithField("session", sID).Error(err)
+				log.WithField("session", c.SessionID).Error(err)
 				return
 			}
 
@@ -144,8 +144,8 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 				return
 			}
 
-			if _, err = bot.core.RegisterPatientFromFacebook(fbID, name, phone); err != nil {
-				log.WithField("session", sID).Error(err)
+			if _, err = bot.core.RegisterPatientFromFacebook(c.Person.ID, c.Person.Name, phone); err != nil {
+				log.WithField("session", c.SessionID).Error(err)
 			}
 			c.SetContextVariable("identified", true)
 		}(c)
