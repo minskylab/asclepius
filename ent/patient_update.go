@@ -228,14 +228,6 @@ func (pu *PatientUpdate) SetScheduleID(id uuid.UUID) *PatientUpdate {
 	return pu
 }
 
-// SetNillableScheduleID sets the schedule edge to Schedule by id if the given value is not nil.
-func (pu *PatientUpdate) SetNillableScheduleID(id *uuid.UUID) *PatientUpdate {
-	if id != nil {
-		pu = pu.SetScheduleID(*id)
-	}
-	return pu
-}
-
 // SetSchedule sets the schedule edge to Schedule.
 func (pu *PatientUpdate) SetSchedule(s *Schedule) *PatientUpdate {
 	return pu.SetScheduleID(s.ID)
@@ -273,6 +265,9 @@ func (pu *PatientUpdate) Save(ctx context.Context) (int, error) {
 	}
 	if len(pu.schedule) > 1 {
 		return 0, errors.New("ent: multiple assignments on a unique edge \"schedule\"")
+	}
+	if pu.clearedSchedule && pu.schedule == nil {
+		return 0, errors.New("ent: clearing a unique edge \"schedule\"")
 	}
 	return pu.sqlSave(ctx)
 }
@@ -708,14 +703,6 @@ func (puo *PatientUpdateOne) SetScheduleID(id uuid.UUID) *PatientUpdateOne {
 	return puo
 }
 
-// SetNillableScheduleID sets the schedule edge to Schedule by id if the given value is not nil.
-func (puo *PatientUpdateOne) SetNillableScheduleID(id *uuid.UUID) *PatientUpdateOne {
-	if id != nil {
-		puo = puo.SetScheduleID(*id)
-	}
-	return puo
-}
-
 // SetSchedule sets the schedule edge to Schedule.
 func (puo *PatientUpdateOne) SetSchedule(s *Schedule) *PatientUpdateOne {
 	return puo.SetScheduleID(s.ID)
@@ -753,6 +740,9 @@ func (puo *PatientUpdateOne) Save(ctx context.Context) (*Patient, error) {
 	}
 	if len(puo.schedule) > 1 {
 		return nil, errors.New("ent: multiple assignments on a unique edge \"schedule\"")
+	}
+	if puo.clearedSchedule && puo.schedule == nil {
+		return nil, errors.New("ent: clearing a unique edge \"schedule\"")
 	}
 	return puo.sqlSave(ctx)
 }

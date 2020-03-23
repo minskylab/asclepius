@@ -13,22 +13,24 @@ import (
 	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/schedule"
 	"github.com/minskylab/asclepius/ent/task"
+	"github.com/minskylab/asclepius/ent/taskresponse"
 )
 
 // TaskCreate is the builder for creating a Task entity.
 type TaskCreate struct {
 	config
 	id          *uuid.UUID
-	title       *[]string
+	title       *string
 	startAt     *time.Time
 	endsAt      *time.Time
 	description *[]string
 	responsible map[uuid.UUID]struct{}
+	responses   map[uuid.UUID]struct{}
 	schedule    map[uuid.UUID]struct{}
 }
 
 // SetTitle sets the title field.
-func (tc *TaskCreate) SetTitle(s []string) *TaskCreate {
+func (tc *TaskCreate) SetTitle(s string) *TaskCreate {
 	tc.title = &s
 	return tc
 }
@@ -91,6 +93,26 @@ func (tc *TaskCreate) AddResponsible(d ...*Doctor) *TaskCreate {
 		ids[i] = d[i].ID
 	}
 	return tc.AddResponsibleIDs(ids...)
+}
+
+// AddResponseIDs adds the responses edge to TaskResponse by ids.
+func (tc *TaskCreate) AddResponseIDs(ids ...uuid.UUID) *TaskCreate {
+	if tc.responses == nil {
+		tc.responses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		tc.responses[ids[i]] = struct{}{}
+	}
+	return tc
+}
+
+// AddResponses adds the responses edges to TaskResponse.
+func (tc *TaskCreate) AddResponses(t ...*TaskResponse) *TaskCreate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tc.AddResponseIDs(ids...)
 }
 
 // SetScheduleID sets the schedule edge to Schedule by id.
@@ -160,7 +182,7 @@ func (tc *TaskCreate) sqlSave(ctx context.Context) (*Task, error) {
 	}
 	if value := tc.title; value != nil {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
+			Type:   field.TypeString,
 			Value:  *value,
 			Column: task.FieldTitle,
 		})
@@ -201,6 +223,25 @@ func (tc *TaskCreate) sqlSave(ctx context.Context) (*Task, error) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: doctor.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := tc.responses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   task.ResponsesTable,
+			Columns: []string{task.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
 				},
 			},
 		}

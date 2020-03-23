@@ -19,6 +19,7 @@ import (
 	"github.com/minskylab/asclepius/ent/patient"
 	"github.com/minskylab/asclepius/ent/schedule"
 	"github.com/minskylab/asclepius/ent/task"
+	"github.com/minskylab/asclepius/ent/taskresponse"
 	"github.com/minskylab/asclepius/ent/test"
 
 	"github.com/facebookincubator/ent/dialect"
@@ -49,6 +50,8 @@ type Client struct {
 	Schedule *ScheduleClient
 	// Task is the client for interacting with the Task builders.
 	Task *TaskClient
+	// TaskResponse is the client for interacting with the TaskResponse builders.
+	TaskResponse *TaskResponseClient
 	// Test is the client for interacting with the Test builders.
 	Test *TestClient
 }
@@ -69,6 +72,7 @@ func NewClient(opts ...Option) *Client {
 		Patient:              NewPatientClient(c),
 		Schedule:             NewScheduleClient(c),
 		Task:                 NewTaskClient(c),
+		TaskResponse:         NewTaskResponseClient(c),
 		Test:                 NewTestClient(c),
 	}
 }
@@ -110,6 +114,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Patient:              NewPatientClient(cfg),
 		Schedule:             NewScheduleClient(cfg),
 		Task:                 NewTaskClient(cfg),
+		TaskResponse:         NewTaskResponseClient(cfg),
 		Test:                 NewTestClient(cfg),
 	}, nil
 }
@@ -138,6 +143,7 @@ func (c *Client) Debug() *Client {
 		Patient:              NewPatientClient(cfg),
 		Schedule:             NewScheduleClient(cfg),
 		Task:                 NewTaskClient(cfg),
+		TaskResponse:         NewTaskResponseClient(cfg),
 		Test:                 NewTestClient(cfg),
 	}
 }
@@ -361,6 +367,20 @@ func (c *DoctorClient) QueryNotes(d *Doctor) *MedicalNoteQuery {
 		sqlgraph.From(doctor.Table, doctor.FieldID, id),
 		sqlgraph.To(medicalnote.Table, medicalnote.FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, doctor.NotesTable, doctor.NotesColumn),
+	)
+	query.sql = sqlgraph.Neighbors(d.driver.Dialect(), step)
+
+	return query
+}
+
+// QueryResponses queries the responses edge of a Doctor.
+func (c *DoctorClient) QueryResponses(d *Doctor) *TaskResponseQuery {
+	query := &TaskResponseQuery{config: c.config}
+	id := d.ID
+	step := sqlgraph.NewStep(
+		sqlgraph.From(doctor.Table, doctor.FieldID, id),
+		sqlgraph.To(taskresponse.Table, taskresponse.FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, doctor.ResponsesTable, doctor.ResponsesColumn),
 	)
 	query.sql = sqlgraph.Neighbors(d.driver.Dialect(), step)
 
@@ -919,6 +939,20 @@ func (c *TaskClient) QueryResponsible(t *Task) *DoctorQuery {
 	return query
 }
 
+// QueryResponses queries the responses edge of a Task.
+func (c *TaskClient) QueryResponses(t *Task) *TaskResponseQuery {
+	query := &TaskResponseQuery{config: c.config}
+	id := t.ID
+	step := sqlgraph.NewStep(
+		sqlgraph.From(task.Table, task.FieldID, id),
+		sqlgraph.To(taskresponse.Table, taskresponse.FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, task.ResponsesTable, task.ResponsesColumn),
+	)
+	query.sql = sqlgraph.Neighbors(t.driver.Dialect(), step)
+
+	return query
+}
+
 // QuerySchedule queries the schedule edge of a Task.
 func (c *TaskClient) QuerySchedule(t *Task) *ScheduleQuery {
 	query := &ScheduleQuery{config: c.config}
@@ -929,6 +963,98 @@ func (c *TaskClient) QuerySchedule(t *Task) *ScheduleQuery {
 		sqlgraph.Edge(sqlgraph.M2O, true, task.ScheduleTable, task.ScheduleColumn),
 	)
 	query.sql = sqlgraph.Neighbors(t.driver.Dialect(), step)
+
+	return query
+}
+
+// TaskResponseClient is a client for the TaskResponse schema.
+type TaskResponseClient struct {
+	config
+}
+
+// NewTaskResponseClient returns a client for the TaskResponse from the given config.
+func NewTaskResponseClient(c config) *TaskResponseClient {
+	return &TaskResponseClient{config: c}
+}
+
+// Create returns a create builder for TaskResponse.
+func (c *TaskResponseClient) Create() *TaskResponseCreate {
+	return &TaskResponseCreate{config: c.config}
+}
+
+// Update returns an update builder for TaskResponse.
+func (c *TaskResponseClient) Update() *TaskResponseUpdate {
+	return &TaskResponseUpdate{config: c.config}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TaskResponseClient) UpdateOne(tr *TaskResponse) *TaskResponseUpdateOne {
+	return c.UpdateOneID(tr.ID)
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TaskResponseClient) UpdateOneID(id uuid.UUID) *TaskResponseUpdateOne {
+	return &TaskResponseUpdateOne{config: c.config, id: id}
+}
+
+// Delete returns a delete builder for TaskResponse.
+func (c *TaskResponseClient) Delete() *TaskResponseDelete {
+	return &TaskResponseDelete{config: c.config}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *TaskResponseClient) DeleteOne(tr *TaskResponse) *TaskResponseDeleteOne {
+	return c.DeleteOneID(tr.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *TaskResponseClient) DeleteOneID(id uuid.UUID) *TaskResponseDeleteOne {
+	return &TaskResponseDeleteOne{c.Delete().Where(taskresponse.ID(id))}
+}
+
+// Create returns a query builder for TaskResponse.
+func (c *TaskResponseClient) Query() *TaskResponseQuery {
+	return &TaskResponseQuery{config: c.config}
+}
+
+// Get returns a TaskResponse entity by its id.
+func (c *TaskResponseClient) Get(ctx context.Context, id uuid.UUID) (*TaskResponse, error) {
+	return c.Query().Where(taskresponse.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TaskResponseClient) GetX(ctx context.Context, id uuid.UUID) *TaskResponse {
+	tr, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return tr
+}
+
+// QueryAuthor queries the author edge of a TaskResponse.
+func (c *TaskResponseClient) QueryAuthor(tr *TaskResponse) *DoctorQuery {
+	query := &DoctorQuery{config: c.config}
+	id := tr.ID
+	step := sqlgraph.NewStep(
+		sqlgraph.From(taskresponse.Table, taskresponse.FieldID, id),
+		sqlgraph.To(doctor.Table, doctor.FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, taskresponse.AuthorTable, taskresponse.AuthorColumn),
+	)
+	query.sql = sqlgraph.Neighbors(tr.driver.Dialect(), step)
+
+	return query
+}
+
+// QueryTask queries the task edge of a TaskResponse.
+func (c *TaskResponseClient) QueryTask(tr *TaskResponse) *TaskQuery {
+	query := &TaskQuery{config: c.config}
+	id := tr.ID
+	step := sqlgraph.NewStep(
+		sqlgraph.From(taskresponse.Table, taskresponse.FieldID, id),
+		sqlgraph.To(task.Table, task.FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, taskresponse.TaskTable, taskresponse.TaskColumn),
+	)
+	query.sql = sqlgraph.Neighbors(tr.driver.Dialect(), step)
 
 	return query
 }

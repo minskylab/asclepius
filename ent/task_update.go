@@ -15,6 +15,7 @@ import (
 	"github.com/minskylab/asclepius/ent/predicate"
 	"github.com/minskylab/asclepius/ent/schedule"
 	"github.com/minskylab/asclepius/ent/task"
+	"github.com/minskylab/asclepius/ent/taskresponse"
 )
 
 // TaskUpdate is the builder for updating Task entities.
@@ -26,8 +27,10 @@ type TaskUpdate struct {
 	description        *[]string
 	cleardescription   bool
 	responsible        map[uuid.UUID]struct{}
+	responses          map[uuid.UUID]struct{}
 	schedule           map[uuid.UUID]struct{}
 	removedResponsible map[uuid.UUID]struct{}
+	removedResponses   map[uuid.UUID]struct{}
 	clearedSchedule    bool
 	predicates         []predicate.Task
 }
@@ -99,6 +102,26 @@ func (tu *TaskUpdate) AddResponsible(d ...*Doctor) *TaskUpdate {
 	return tu.AddResponsibleIDs(ids...)
 }
 
+// AddResponseIDs adds the responses edge to TaskResponse by ids.
+func (tu *TaskUpdate) AddResponseIDs(ids ...uuid.UUID) *TaskUpdate {
+	if tu.responses == nil {
+		tu.responses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		tu.responses[ids[i]] = struct{}{}
+	}
+	return tu
+}
+
+// AddResponses adds the responses edges to TaskResponse.
+func (tu *TaskUpdate) AddResponses(t ...*TaskResponse) *TaskUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tu.AddResponseIDs(ids...)
+}
+
 // SetScheduleID sets the schedule edge to Schedule by id.
 func (tu *TaskUpdate) SetScheduleID(id uuid.UUID) *TaskUpdate {
 	if tu.schedule == nil {
@@ -139,6 +162,26 @@ func (tu *TaskUpdate) RemoveResponsible(d ...*Doctor) *TaskUpdate {
 		ids[i] = d[i].ID
 	}
 	return tu.RemoveResponsibleIDs(ids...)
+}
+
+// RemoveResponseIDs removes the responses edge to TaskResponse by ids.
+func (tu *TaskUpdate) RemoveResponseIDs(ids ...uuid.UUID) *TaskUpdate {
+	if tu.removedResponses == nil {
+		tu.removedResponses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		tu.removedResponses[ids[i]] = struct{}{}
+	}
+	return tu
+}
+
+// RemoveResponses removes responses edges to TaskResponse.
+func (tu *TaskUpdate) RemoveResponses(t ...*TaskResponse) *TaskUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tu.RemoveResponseIDs(ids...)
 }
 
 // ClearSchedule clears the schedule edge to Schedule.
@@ -260,6 +303,44 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if nodes := tu.removedResponses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   task.ResponsesTable,
+			Columns: []string{task.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.responses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   task.ResponsesTable,
+			Columns: []string{task.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if tu.clearedSchedule {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -316,8 +397,10 @@ type TaskUpdateOne struct {
 	description        *[]string
 	cleardescription   bool
 	responsible        map[uuid.UUID]struct{}
+	responses          map[uuid.UUID]struct{}
 	schedule           map[uuid.UUID]struct{}
 	removedResponsible map[uuid.UUID]struct{}
+	removedResponses   map[uuid.UUID]struct{}
 	clearedSchedule    bool
 }
 
@@ -382,6 +465,26 @@ func (tuo *TaskUpdateOne) AddResponsible(d ...*Doctor) *TaskUpdateOne {
 	return tuo.AddResponsibleIDs(ids...)
 }
 
+// AddResponseIDs adds the responses edge to TaskResponse by ids.
+func (tuo *TaskUpdateOne) AddResponseIDs(ids ...uuid.UUID) *TaskUpdateOne {
+	if tuo.responses == nil {
+		tuo.responses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		tuo.responses[ids[i]] = struct{}{}
+	}
+	return tuo
+}
+
+// AddResponses adds the responses edges to TaskResponse.
+func (tuo *TaskUpdateOne) AddResponses(t ...*TaskResponse) *TaskUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tuo.AddResponseIDs(ids...)
+}
+
 // SetScheduleID sets the schedule edge to Schedule by id.
 func (tuo *TaskUpdateOne) SetScheduleID(id uuid.UUID) *TaskUpdateOne {
 	if tuo.schedule == nil {
@@ -422,6 +525,26 @@ func (tuo *TaskUpdateOne) RemoveResponsible(d ...*Doctor) *TaskUpdateOne {
 		ids[i] = d[i].ID
 	}
 	return tuo.RemoveResponsibleIDs(ids...)
+}
+
+// RemoveResponseIDs removes the responses edge to TaskResponse by ids.
+func (tuo *TaskUpdateOne) RemoveResponseIDs(ids ...uuid.UUID) *TaskUpdateOne {
+	if tuo.removedResponses == nil {
+		tuo.removedResponses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		tuo.removedResponses[ids[i]] = struct{}{}
+	}
+	return tuo
+}
+
+// RemoveResponses removes responses edges to TaskResponse.
+func (tuo *TaskUpdateOne) RemoveResponses(t ...*TaskResponse) *TaskUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tuo.RemoveResponseIDs(ids...)
 }
 
 // ClearSchedule clears the schedule edge to Schedule.
@@ -529,6 +652,44 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (t *Task, err error) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: doctor.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nodes := tuo.removedResponses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   task.ResponsesTable,
+			Columns: []string{task.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.responses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   task.ResponsesTable,
+			Columns: []string{task.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
 				},
 			},
 		}

@@ -27,5 +27,7 @@ func main() {
 		panic(errors.Cause(err))
 	}
 
-
+	if err := core.Done(); err != nil {
+		panic(errors.Cause(err))
+	}
 }

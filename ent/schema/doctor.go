@@ -33,6 +33,7 @@ func (Doctor) Fields() []ent.Field {
 func (Doctor) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("notes", MedicalNote.Type),
+		edge.To("responses", TaskResponse.Type),
 		edge.From("tasks", Task.Type).Ref("responsible"),
 	}
 }

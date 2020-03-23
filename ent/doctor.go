@@ -39,11 +39,13 @@ type Doctor struct {
 type DoctorEdges struct {
 	// Notes holds the value of the notes edge.
 	Notes []*MedicalNote
+	// Responses holds the value of the responses edge.
+	Responses []*TaskResponse
 	// Tasks holds the value of the tasks edge.
 	Tasks []*Task
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // NotesOrErr returns the Notes value or an error if the edge
@@ -55,10 +57,19 @@ func (e DoctorEdges) NotesOrErr() ([]*MedicalNote, error) {
 	return nil, &NotLoadedError{edge: "notes"}
 }
 
+// ResponsesOrErr returns the Responses value or an error if the edge
+// was not loaded in eager-loading.
+func (e DoctorEdges) ResponsesOrErr() ([]*TaskResponse, error) {
+	if e.loadedTypes[1] {
+		return e.Responses, nil
+	}
+	return nil, &NotLoadedError{edge: "responses"}
+}
+
 // TasksOrErr returns the Tasks value or an error if the edge
 // was not loaded in eager-loading.
 func (e DoctorEdges) TasksOrErr() ([]*Task, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Tasks, nil
 	}
 	return nil, &NotLoadedError{edge: "tasks"}
@@ -128,6 +139,11 @@ func (d *Doctor) assignValues(values ...interface{}) error {
 // QueryNotes queries the notes edge of the Doctor.
 func (d *Doctor) QueryNotes() *MedicalNoteQuery {
 	return (&DoctorClient{config: d.config}).QueryNotes(d)
+}
+
+// QueryResponses queries the responses edge of the Doctor.
+func (d *Doctor) QueryResponses() *TaskResponseQuery {
+	return (&DoctorClient{config: d.config}).QueryResponses(d)
 }
 
 // QueryTasks queries the tasks edge of the Doctor.

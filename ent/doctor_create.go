@@ -14,6 +14,7 @@ import (
 	"github.com/minskylab/asclepius/ent/doctor"
 	"github.com/minskylab/asclepius/ent/medicalnote"
 	"github.com/minskylab/asclepius/ent/task"
+	"github.com/minskylab/asclepius/ent/taskresponse"
 )
 
 // DoctorCreate is the builder for creating a Doctor entity.
@@ -27,6 +28,7 @@ type DoctorCreate struct {
 	lastConnection *time.Time
 	volunteer      *bool
 	notes          map[uuid.UUID]struct{}
+	responses      map[uuid.UUID]struct{}
 	tasks          map[uuid.UUID]struct{}
 }
 
@@ -106,6 +108,26 @@ func (dc *DoctorCreate) AddNotes(m ...*MedicalNote) *DoctorCreate {
 		ids[i] = m[i].ID
 	}
 	return dc.AddNoteIDs(ids...)
+}
+
+// AddResponseIDs adds the responses edge to TaskResponse by ids.
+func (dc *DoctorCreate) AddResponseIDs(ids ...uuid.UUID) *DoctorCreate {
+	if dc.responses == nil {
+		dc.responses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		dc.responses[ids[i]] = struct{}{}
+	}
+	return dc
+}
+
+// AddResponses adds the responses edges to TaskResponse.
+func (dc *DoctorCreate) AddResponses(t ...*TaskResponse) *DoctorCreate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return dc.AddResponseIDs(ids...)
 }
 
 // AddTaskIDs adds the tasks edge to Task by ids.
@@ -239,6 +261,25 @@ func (dc *DoctorCreate) sqlSave(ctx context.Context) (*Doctor, error) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: medicalnote.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.responses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   doctor.ResponsesTable,
+			Columns: []string{doctor.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
 				},
 			},
 		}

@@ -96,7 +96,7 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 		if err != nil {
 			log.WithField("session", c.SessionID).Error(errors.Cause(err))
 		}
-		return nil
+		return response(c, out)
 	})
 
 	bot.engine.ResolveAny(fb, func(c *neo.Context, in *neo.Input, out *neo.Output, response neo.OutputResponse) error {
@@ -117,6 +117,7 @@ func (bot *Bot) actionsForFb(fb neo.CommunicationChannel) {
 			}
 
 			if isPatient {
+				c.SetContextVariable("identified", true)
 				return
 			}
 

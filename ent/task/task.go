@@ -29,6 +29,13 @@ const (
 	// ResponsibleInverseTable is the table name for the Doctor entity.
 	// It exists in this package in order to avoid circular dependency with the "doctor" package.
 	ResponsibleInverseTable = "doctors"
+	// ResponsesTable is the table the holds the responses relation/edge.
+	ResponsesTable = "task_responses"
+	// ResponsesInverseTable is the table name for the TaskResponse entity.
+	// It exists in this package in order to avoid circular dependency with the "taskresponse" package.
+	ResponsesInverseTable = "task_responses"
+	// ResponsesColumn is the table column denoting the responses relation/edge.
+	ResponsesColumn = "task_responses"
 	// ScheduleTable is the table the holds the schedule relation/edge.
 	ScheduleTable = "tasks"
 	// ScheduleInverseTable is the table name for the Schedule entity.

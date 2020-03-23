@@ -49,3 +49,7 @@ func (core *Core) openClient(config *config.GlobalConfig) error {
 func (core *Core) done() error {
 	return core.client.Close()
 }
+
+func (core *Core) Done() error {
+	return core.done()
+}

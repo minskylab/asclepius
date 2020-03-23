@@ -181,7 +181,7 @@ var (
 	// TasksColumns holds the columns for the "tasks" table.
 	TasksColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "title", Type: field.TypeJSON},
+		{Name: "title", Type: field.TypeString},
 		{Name: "start_at", Type: field.TypeTime},
 		{Name: "ends_at", Type: field.TypeTime},
 		{Name: "description", Type: field.TypeJSON, Nullable: true},
@@ -198,6 +198,38 @@ var (
 				Columns: []*schema.Column{TasksColumns[5]},
 
 				RefColumns: []*schema.Column{SchedulesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// TaskResponsesColumns holds the columns for the "task_responses" table.
+	TaskResponsesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "at", Type: field.TypeTime},
+		{Name: "last_change", Type: field.TypeTime},
+		{Name: "observations", Type: field.TypeJSON},
+		{Name: "meta", Type: field.TypeJSON, Nullable: true},
+		{Name: "doctor_responses", Type: field.TypeUUID, Nullable: true},
+		{Name: "task_responses", Type: field.TypeUUID, Nullable: true},
+	}
+	// TaskResponsesTable holds the schema information for the "task_responses" table.
+	TaskResponsesTable = &schema.Table{
+		Name:       "task_responses",
+		Columns:    TaskResponsesColumns,
+		PrimaryKey: []*schema.Column{TaskResponsesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "task_responses_doctors_responses",
+				Columns: []*schema.Column{TaskResponsesColumns[5]},
+
+				RefColumns: []*schema.Column{DoctorsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:  "task_responses_tasks_responses",
+				Columns: []*schema.Column{TaskResponsesColumns[6]},
+
+				RefColumns: []*schema.Column{TasksColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -261,6 +293,7 @@ var (
 		PatientsTable,
 		SchedulesTable,
 		TasksTable,
+		TaskResponsesTable,
 		TestsTable,
 		TaskResponsibleTable,
 	}
@@ -274,6 +307,8 @@ func init() {
 	MedicalNotesTable.ForeignKeys[1].RefTable = HistoriesTable
 	SchedulesTable.ForeignKeys[0].RefTable = PatientsTable
 	TasksTable.ForeignKeys[0].RefTable = SchedulesTable
+	TaskResponsesTable.ForeignKeys[0].RefTable = DoctorsTable
+	TaskResponsesTable.ForeignKeys[1].RefTable = TasksTable
 	TestsTable.ForeignKeys[0].RefTable = HistoriesTable
 	TaskResponsibleTable.ForeignKeys[0].RefTable = TasksTable
 	TaskResponsibleTable.ForeignKeys[1].RefTable = DoctorsTable

@@ -36,6 +36,13 @@ const (
 	NotesInverseTable = "medical_notes"
 	// NotesColumn is the table column denoting the notes relation/edge.
 	NotesColumn = "doctor_notes"
+	// ResponsesTable is the table the holds the responses relation/edge.
+	ResponsesTable = "task_responses"
+	// ResponsesInverseTable is the table name for the TaskResponse entity.
+	// It exists in this package in order to avoid circular dependency with the "taskresponse" package.
+	ResponsesInverseTable = "task_responses"
+	// ResponsesColumn is the table column denoting the responses relation/edge.
+	ResponsesColumn = "doctor_responses"
 	// TasksTable is the table the holds the tasks relation/edge. The primary key declared below.
 	TasksTable = "task_responsible"
 	// TasksInverseTable is the table name for the Task entity.

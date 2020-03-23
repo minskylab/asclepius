@@ -42,6 +42,6 @@ func (Patient) Fields() []ent.Field {
 func (Patient) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("history", History.Type).Required().Unique(),
-		edge.To("schedule", Schedule.Type).Unique(),
+		edge.To("schedule", Schedule.Type).Required().Unique(),
 	}
 }

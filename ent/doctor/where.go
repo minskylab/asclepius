@@ -524,6 +524,34 @@ func HasNotesWith(preds ...predicate.MedicalNote) predicate.Doctor {
 	})
 }
 
+// HasResponses applies the HasEdge predicate on the "responses" edge.
+func HasResponses() predicate.Doctor {
+	return predicate.Doctor(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(ResponsesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ResponsesTable, ResponsesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasResponsesWith applies the HasEdge predicate on the "responses" edge with a given conditions (other predicates).
+func HasResponsesWith(preds ...predicate.TaskResponse) predicate.Doctor {
+	return predicate.Doctor(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(ResponsesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ResponsesTable, ResponsesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasTasks applies the HasEdge predicate on the "tasks" edge.
 func HasTasks() predicate.Doctor {
 	return predicate.Doctor(func(s *sql.Selector) {

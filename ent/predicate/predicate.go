@@ -33,5 +33,8 @@ type Schedule func(*sql.Selector)
 // Task is the predicate function for task builders.
 type Task func(*sql.Selector)
 
+// TaskResponse is the predicate function for taskresponse builders.
+type TaskResponse func(*sql.Selector)
+
 // Test is the predicate function for test builders.
 type Test func(*sql.Selector)

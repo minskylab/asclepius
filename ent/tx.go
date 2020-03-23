@@ -30,6 +30,8 @@ type Tx struct {
 	Schedule *ScheduleClient
 	// Task is the client for interacting with the Task builders.
 	Task *TaskClient
+	// TaskResponse is the client for interacting with the TaskResponse builders.
+	TaskResponse *TaskResponseClient
 	// Test is the client for interacting with the Test builders.
 	Test *TestClient
 }
@@ -58,6 +60,7 @@ func (tx *Tx) Client() *Client {
 		Patient:              NewPatientClient(tx.config),
 		Schedule:             NewScheduleClient(tx.config),
 		Task:                 NewTaskClient(tx.config),
+		TaskResponse:         NewTaskResponseClient(tx.config),
 		Test:                 NewTestClient(tx.config),
 	}
 }

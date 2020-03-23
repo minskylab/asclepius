@@ -15,6 +15,7 @@ import (
 	"github.com/minskylab/asclepius/ent/medicalnote"
 	"github.com/minskylab/asclepius/ent/predicate"
 	"github.com/minskylab/asclepius/ent/task"
+	"github.com/minskylab/asclepius/ent/taskresponse"
 )
 
 // DoctorUpdate is the builder for updating Doctor entities.
@@ -28,8 +29,10 @@ type DoctorUpdate struct {
 	clearlastConnection bool
 	volunteer           *bool
 	notes               map[uuid.UUID]struct{}
+	responses           map[uuid.UUID]struct{}
 	tasks               map[uuid.UUID]struct{}
 	removedNotes        map[uuid.UUID]struct{}
+	removedResponses    map[uuid.UUID]struct{}
 	removedTasks        map[uuid.UUID]struct{}
 	predicates          []predicate.Doctor
 }
@@ -119,6 +122,26 @@ func (du *DoctorUpdate) AddNotes(m ...*MedicalNote) *DoctorUpdate {
 	return du.AddNoteIDs(ids...)
 }
 
+// AddResponseIDs adds the responses edge to TaskResponse by ids.
+func (du *DoctorUpdate) AddResponseIDs(ids ...uuid.UUID) *DoctorUpdate {
+	if du.responses == nil {
+		du.responses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		du.responses[ids[i]] = struct{}{}
+	}
+	return du
+}
+
+// AddResponses adds the responses edges to TaskResponse.
+func (du *DoctorUpdate) AddResponses(t ...*TaskResponse) *DoctorUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return du.AddResponseIDs(ids...)
+}
+
 // AddTaskIDs adds the tasks edge to Task by ids.
 func (du *DoctorUpdate) AddTaskIDs(ids ...uuid.UUID) *DoctorUpdate {
 	if du.tasks == nil {
@@ -157,6 +180,26 @@ func (du *DoctorUpdate) RemoveNotes(m ...*MedicalNote) *DoctorUpdate {
 		ids[i] = m[i].ID
 	}
 	return du.RemoveNoteIDs(ids...)
+}
+
+// RemoveResponseIDs removes the responses edge to TaskResponse by ids.
+func (du *DoctorUpdate) RemoveResponseIDs(ids ...uuid.UUID) *DoctorUpdate {
+	if du.removedResponses == nil {
+		du.removedResponses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		du.removedResponses[ids[i]] = struct{}{}
+	}
+	return du
+}
+
+// RemoveResponses removes responses edges to TaskResponse.
+func (du *DoctorUpdate) RemoveResponses(t ...*TaskResponse) *DoctorUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return du.RemoveResponseIDs(ids...)
 }
 
 // RemoveTaskIDs removes the tasks edge to Task by ids.
@@ -315,6 +358,44 @@ func (du *DoctorUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if nodes := du.removedResponses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   doctor.ResponsesTable,
+			Columns: []string{doctor.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.responses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   doctor.ResponsesTable,
+			Columns: []string{doctor.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if nodes := du.removedTasks; len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -376,8 +457,10 @@ type DoctorUpdateOne struct {
 	clearlastConnection bool
 	volunteer           *bool
 	notes               map[uuid.UUID]struct{}
+	responses           map[uuid.UUID]struct{}
 	tasks               map[uuid.UUID]struct{}
 	removedNotes        map[uuid.UUID]struct{}
+	removedResponses    map[uuid.UUID]struct{}
 	removedTasks        map[uuid.UUID]struct{}
 }
 
@@ -460,6 +543,26 @@ func (duo *DoctorUpdateOne) AddNotes(m ...*MedicalNote) *DoctorUpdateOne {
 	return duo.AddNoteIDs(ids...)
 }
 
+// AddResponseIDs adds the responses edge to TaskResponse by ids.
+func (duo *DoctorUpdateOne) AddResponseIDs(ids ...uuid.UUID) *DoctorUpdateOne {
+	if duo.responses == nil {
+		duo.responses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		duo.responses[ids[i]] = struct{}{}
+	}
+	return duo
+}
+
+// AddResponses adds the responses edges to TaskResponse.
+func (duo *DoctorUpdateOne) AddResponses(t ...*TaskResponse) *DoctorUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return duo.AddResponseIDs(ids...)
+}
+
 // AddTaskIDs adds the tasks edge to Task by ids.
 func (duo *DoctorUpdateOne) AddTaskIDs(ids ...uuid.UUID) *DoctorUpdateOne {
 	if duo.tasks == nil {
@@ -498,6 +601,26 @@ func (duo *DoctorUpdateOne) RemoveNotes(m ...*MedicalNote) *DoctorUpdateOne {
 		ids[i] = m[i].ID
 	}
 	return duo.RemoveNoteIDs(ids...)
+}
+
+// RemoveResponseIDs removes the responses edge to TaskResponse by ids.
+func (duo *DoctorUpdateOne) RemoveResponseIDs(ids ...uuid.UUID) *DoctorUpdateOne {
+	if duo.removedResponses == nil {
+		duo.removedResponses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		duo.removedResponses[ids[i]] = struct{}{}
+	}
+	return duo
+}
+
+// RemoveResponses removes responses edges to TaskResponse.
+func (duo *DoctorUpdateOne) RemoveResponses(t ...*TaskResponse) *DoctorUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return duo.RemoveResponseIDs(ids...)
 }
 
 // RemoveTaskIDs removes the tasks edge to Task by ids.
@@ -642,6 +765,44 @@ func (duo *DoctorUpdateOne) sqlSave(ctx context.Context) (d *Doctor, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: medicalnote.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nodes := duo.removedResponses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   doctor.ResponsesTable,
+			Columns: []string{doctor.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
+				},
+			},
+		}
+		for k, _ := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.responses; len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   doctor.ResponsesTable,
+			Columns: []string{doctor.ResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: taskresponse.FieldID,
 				},
 			},
 		}

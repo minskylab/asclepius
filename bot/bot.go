@@ -54,3 +54,7 @@ func (bot *Bot) Run() error {
 	}
 	return nil
 }
+
+func (bot *Bot) Done() error {
+	return bot.core.Done()
+}

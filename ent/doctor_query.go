@@ -17,6 +17,7 @@ import (
 	"github.com/minskylab/asclepius/ent/medicalnote"
 	"github.com/minskylab/asclepius/ent/predicate"
 	"github.com/minskylab/asclepius/ent/task"
+	"github.com/minskylab/asclepius/ent/taskresponse"
 )
 
 // DoctorQuery is the builder for querying Doctor entities.
@@ -28,8 +29,9 @@ type DoctorQuery struct {
 	unique     []string
 	predicates []predicate.Doctor
 	// eager-loading edges.
-	withNotes *MedicalNoteQuery
-	withTasks *TaskQuery
+	withNotes     *MedicalNoteQuery
+	withResponses *TaskResponseQuery
+	withTasks     *TaskQuery
 	// intermediate query.
 	sql *sql.Selector
 }
@@ -65,6 +67,18 @@ func (dq *DoctorQuery) QueryNotes() *MedicalNoteQuery {
 		sqlgraph.From(doctor.Table, doctor.FieldID, dq.sqlQuery()),
 		sqlgraph.To(medicalnote.Table, medicalnote.FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, doctor.NotesTable, doctor.NotesColumn),
+	)
+	query.sql = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+	return query
+}
+
+// QueryResponses chains the current query on the responses edge.
+func (dq *DoctorQuery) QueryResponses() *TaskResponseQuery {
+	query := &TaskResponseQuery{config: dq.config}
+	step := sqlgraph.NewStep(
+		sqlgraph.From(doctor.Table, doctor.FieldID, dq.sqlQuery()),
+		sqlgraph.To(taskresponse.Table, taskresponse.FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, doctor.ResponsesTable, doctor.ResponsesColumn),
 	)
 	query.sql = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 	return query
@@ -262,6 +276,17 @@ func (dq *DoctorQuery) WithNotes(opts ...func(*MedicalNoteQuery)) *DoctorQuery {
 	return dq
 }
 
+//  WithResponses tells the query-builder to eager-loads the nodes that are connected to
+// the "responses" edge. The optional arguments used to configure the query builder of the edge.
+func (dq *DoctorQuery) WithResponses(opts ...func(*TaskResponseQuery)) *DoctorQuery {
+	query := &TaskResponseQuery{config: dq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withResponses = query
+	return dq
+}
+
 //  WithTasks tells the query-builder to eager-loads the nodes that are connected to
 // the "tasks" edge. The optional arguments used to configure the query builder of the edge.
 func (dq *DoctorQuery) WithTasks(opts ...func(*TaskQuery)) *DoctorQuery {
@@ -318,8 +343,9 @@ func (dq *DoctorQuery) sqlAll(ctx context.Context) ([]*Doctor, error) {
 	var (
 		nodes       = []*Doctor{}
 		_spec       = dq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			dq.withNotes != nil,
+			dq.withResponses != nil,
 			dq.withTasks != nil,
 		}
 	)
@@ -369,6 +395,34 @@ func (dq *DoctorQuery) sqlAll(ctx context.Context) ([]*Doctor, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "doctor_notes" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Notes = append(node.Edges.Notes, n)
+		}
+	}
+
+	if query := dq.withResponses; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[uuid.UUID]*Doctor)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.TaskResponse(func(s *sql.Selector) {
+			s.Where(sql.InValues(doctor.ResponsesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.doctor_responses
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "doctor_responses" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "doctor_responses" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Responses = append(node.Edges.Responses, n)
 		}
 	}
 

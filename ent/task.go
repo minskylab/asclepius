@@ -20,7 +20,7 @@ type Task struct {
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
 	// Title holds the value of the "title" field.
-	Title []string `json:"title,omitempty"`
+	Title string `json:"title,omitempty"`
 	// StartAt holds the value of the "startAt" field.
 	StartAt time.Time `json:"startAt,omitempty"`
 	// EndsAt holds the value of the "endsAt" field.
@@ -37,11 +37,13 @@ type Task struct {
 type TaskEdges struct {
 	// Responsible holds the value of the responsible edge.
 	Responsible []*Doctor
+	// Responses holds the value of the responses edge.
+	Responses []*TaskResponse
 	// Schedule holds the value of the schedule edge.
 	Schedule *Schedule
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // ResponsibleOrErr returns the Responsible value or an error if the edge
@@ -53,10 +55,19 @@ func (e TaskEdges) ResponsibleOrErr() ([]*Doctor, error) {
 	return nil, &NotLoadedError{edge: "responsible"}
 }
 
+// ResponsesOrErr returns the Responses value or an error if the edge
+// was not loaded in eager-loading.
+func (e TaskEdges) ResponsesOrErr() ([]*TaskResponse, error) {
+	if e.loadedTypes[1] {
+		return e.Responses, nil
+	}
+	return nil, &NotLoadedError{edge: "responses"}
+}
+
 // ScheduleOrErr returns the Schedule value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e TaskEdges) ScheduleOrErr() (*Schedule, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		if e.Schedule == nil {
 			// The edge schedule was loaded in eager-loading,
 			// but was not found.
@@ -70,11 +81,11 @@ func (e TaskEdges) ScheduleOrErr() (*Schedule, error) {
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Task) scanValues() []interface{} {
 	return []interface{}{
-		&uuid.UUID{},    // id
-		&[]byte{},       // title
-		&sql.NullTime{}, // startAt
-		&sql.NullTime{}, // endsAt
-		&[]byte{},       // description
+		&uuid.UUID{},      // id
+		&sql.NullString{}, // title
+		&sql.NullTime{},   // startAt
+		&sql.NullTime{},   // endsAt
+		&[]byte{},         // description
 	}
 }
 
@@ -97,13 +108,10 @@ func (t *Task) assignValues(values ...interface{}) error {
 		t.ID = *value
 	}
 	values = values[1:]
-
-	if value, ok := values[0].(*[]byte); !ok {
+	if value, ok := values[0].(*sql.NullString); !ok {
 		return fmt.Errorf("unexpected type %T for field title", values[0])
-	} else if value != nil && len(*value) > 0 {
-		if err := json.Unmarshal(*value, &t.Title); err != nil {
-			return fmt.Errorf("unmarshal field title: %v", err)
-		}
+	} else if value.Valid {
+		t.Title = value.String
 	}
 	if value, ok := values[1].(*sql.NullTime); !ok {
 		return fmt.Errorf("unexpected type %T for field startAt", values[1])
@@ -139,6 +147,11 @@ func (t *Task) QueryResponsible() *DoctorQuery {
 	return (&TaskClient{config: t.config}).QueryResponsible(t)
 }
 
+// QueryResponses queries the responses edge of the Task.
+func (t *Task) QueryResponses() *TaskResponseQuery {
+	return (&TaskClient{config: t.config}).QueryResponses(t)
+}
+
 // QuerySchedule queries the schedule edge of the Task.
 func (t *Task) QuerySchedule() *ScheduleQuery {
 	return (&TaskClient{config: t.config}).QuerySchedule(t)
@@ -168,7 +181,7 @@ func (t *Task) String() string {
 	builder.WriteString("Task(")
 	builder.WriteString(fmt.Sprintf("id=%v", t.ID))
 	builder.WriteString(", title=")
-	builder.WriteString(fmt.Sprintf("%v", t.Title))
+	builder.WriteString(t.Title)
 	builder.WriteString(", startAt=")
 	builder.WriteString(t.StartAt.Format(time.ANSIC))
 	builder.WriteString(", endsAt=")

@@ -17,6 +17,7 @@ import (
 	"github.com/minskylab/asclepius/ent/predicate"
 	"github.com/minskylab/asclepius/ent/schedule"
 	"github.com/minskylab/asclepius/ent/task"
+	"github.com/minskylab/asclepius/ent/taskresponse"
 )
 
 // TaskQuery is the builder for querying Task entities.
@@ -29,6 +30,7 @@ type TaskQuery struct {
 	predicates []predicate.Task
 	// eager-loading edges.
 	withResponsible *DoctorQuery
+	withResponses   *TaskResponseQuery
 	withSchedule    *ScheduleQuery
 	withFKs         bool
 	// intermediate query.
@@ -66,6 +68,18 @@ func (tq *TaskQuery) QueryResponsible() *DoctorQuery {
 		sqlgraph.From(task.Table, task.FieldID, tq.sqlQuery()),
 		sqlgraph.To(doctor.Table, doctor.FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, task.ResponsibleTable, task.ResponsiblePrimaryKey...),
+	)
+	query.sql = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
+	return query
+}
+
+// QueryResponses chains the current query on the responses edge.
+func (tq *TaskQuery) QueryResponses() *TaskResponseQuery {
+	query := &TaskResponseQuery{config: tq.config}
+	step := sqlgraph.NewStep(
+		sqlgraph.From(task.Table, task.FieldID, tq.sqlQuery()),
+		sqlgraph.To(taskresponse.Table, taskresponse.FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, task.ResponsesTable, task.ResponsesColumn),
 	)
 	query.sql = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
 	return query
@@ -263,6 +277,17 @@ func (tq *TaskQuery) WithResponsible(opts ...func(*DoctorQuery)) *TaskQuery {
 	return tq
 }
 
+//  WithResponses tells the query-builder to eager-loads the nodes that are connected to
+// the "responses" edge. The optional arguments used to configure the query builder of the edge.
+func (tq *TaskQuery) WithResponses(opts ...func(*TaskResponseQuery)) *TaskQuery {
+	query := &TaskResponseQuery{config: tq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	tq.withResponses = query
+	return tq
+}
+
 //  WithSchedule tells the query-builder to eager-loads the nodes that are connected to
 // the "schedule" edge. The optional arguments used to configure the query builder of the edge.
 func (tq *TaskQuery) WithSchedule(opts ...func(*ScheduleQuery)) *TaskQuery {
@@ -280,7 +305,7 @@ func (tq *TaskQuery) WithSchedule(opts ...func(*ScheduleQuery)) *TaskQuery {
 // Example:
 //
 //	var v []struct {
-//		Title []string `json:"title,omitempty"`
+//		Title string `json:"title,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -301,7 +326,7 @@ func (tq *TaskQuery) GroupBy(field string, fields ...string) *TaskGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Title []string `json:"title,omitempty"`
+//		Title string `json:"title,omitempty"`
 //	}
 //
 //	client.Task.Query().
@@ -320,8 +345,9 @@ func (tq *TaskQuery) sqlAll(ctx context.Context) ([]*Task, error) {
 		nodes       = []*Task{}
 		withFKs     = tq.withFKs
 		_spec       = tq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			tq.withResponsible != nil,
+			tq.withResponses != nil,
 			tq.withSchedule != nil,
 		}
 	)
@@ -415,6 +441,34 @@ func (tq *TaskQuery) sqlAll(ctx context.Context) ([]*Task, error) {
 			for i := range nodes {
 				nodes[i].Edges.Responsible = append(nodes[i].Edges.Responsible, n)
 			}
+		}
+	}
+
+	if query := tq.withResponses; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[uuid.UUID]*Task)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.TaskResponse(func(s *sql.Selector) {
+			s.Where(sql.InValues(task.ResponsesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.task_responses
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "task_responses" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "task_responses" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Responses = append(node.Edges.Responses, n)
 		}
 	}
 

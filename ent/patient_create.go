@@ -164,14 +164,6 @@ func (pc *PatientCreate) SetScheduleID(id uuid.UUID) *PatientCreate {
 	return pc
 }
 
-// SetNillableScheduleID sets the schedule edge to Schedule by id if the given value is not nil.
-func (pc *PatientCreate) SetNillableScheduleID(id *uuid.UUID) *PatientCreate {
-	if id != nil {
-		pc = pc.SetScheduleID(*id)
-	}
-	return pc
-}
-
 // SetSchedule sets the schedule edge to Schedule.
 func (pc *PatientCreate) SetSchedule(s *Schedule) *PatientCreate {
 	return pc.SetScheduleID(s.ID)
@@ -207,6 +199,9 @@ func (pc *PatientCreate) Save(ctx context.Context) (*Patient, error) {
 	}
 	if len(pc.schedule) > 1 {
 		return nil, errors.New("ent: multiple assignments on a unique edge \"schedule\"")
+	}
+	if pc.schedule == nil {
+		return nil, errors.New("ent: missing required edge \"schedule\"")
 	}
 	return pc.sqlSave(ctx)
 }

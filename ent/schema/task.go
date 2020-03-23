@@ -18,7 +18,7 @@ type Task struct {
 func (Task) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}),
-		field.Strings("title").Immutable(),
+		field.String("title").Immutable(),
 		field.Time("startAt").Default(func() time.Time {
 			return time.Now()
 		}),
@@ -33,6 +33,7 @@ func (Task) Fields() []ent.Field {
 func (Task) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("responsible", Doctor.Type),
+		edge.To("responses", TaskResponse.Type),
 		edge.From("schedule", Schedule.Type).Ref("tasks").Unique(),
 	}
 }

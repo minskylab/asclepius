@@ -9,6 +9,7 @@ import (
 	"github.com/minskylab/asclepius/ent"
 	"github.com/minskylab/asclepius/ent/history"
 	"github.com/minskylab/asclepius/ent/patient"
+	"github.com/minskylab/asclepius/ent/schedule"
 	"github.com/minskylab/asclepius/ent/test"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +31,7 @@ type EpidemicConditions struct {
 
 func (core *Core) registerNewPatientFromFacebook(facebookID string, name string, phone string) (*ent.Patient, error) {
 	name = strings.Trim(name, " \n,.'\"\\/")
-	phone = strings.Trim(name, " \n,.'\"\\/")
+	phone = strings.Trim(phone, " \n,.'\"\\/")
 
 	tx, err := core.client.Tx(context.Background())
 	if err != nil {
@@ -196,6 +197,30 @@ func (core *Core) addEpidemiologicToTest(testID string, epidemic EpidemicConditi
 	return core.client.Test.Get(context.Background(), id)
 }
 
+
+func (core *Core) registerNewTask(patientID uuid.UUID, title, description string, durationTask time.Duration) (*ent.Task, error) {
+	sch, err := core.client.Schedule.Query().
+		Where(schedule.HasPatientWith(patient.IDEQ(patientID))).
+		Only(context.Background())
+	if err != nil {
+		return nil, errors.Wrap(err, "error at find schedule of patient")
+	}
+
+	task, err := core.client.Task.Create().
+		SetID(uuid.New()).
+		SetStartAt(time.Now()).
+		SetEndsAt(time.Now().Add(durationTask)).
+		SetTitle(title).
+		SetDescription([]string{description}).
+		SetSchedule(sch).
+		Save(context.Background())
+	if err != nil {
+		return nil, errors.Wrap(err, "error at try to create task")
+	}
+
+	return task, nil
+
+}
 
 func (core *Core) AddEpidemiologicFactorsToTest(testID string, epidemic EpidemicConditions) (*ent.Test, error) {
 	log.WithField("testID", testID).Info("adding epidemiologic facts")
