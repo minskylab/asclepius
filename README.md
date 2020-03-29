@@ -28,7 +28,7 @@ Las entidades más básicas con las que cuenta dicho módulo son: **Persona**, *
 
 **Rol,** un rol es una entidad que nos sirve para designar funciones a personas en la plataforma, por ejemplo, un grupo de personas puede tener el rol de *ciudadano* y eso les confiere atributos extra que le permiten interactuar de otras maneras con la plataforma, cabe resaltar que los roles no son exclusivos, esto quiere decir que una persona puede tener ilimitados roles y entre estos concederán y/o negarán funcionalidades a dicha persona.
 
-**Lugar, **un lugar, en Asclepius, describe un lugar físico o virtual que sirve para poder contextualizar muchas de las interacciones de las diferentes entidades.
+**Lugar, **un lugar, en Asclepius, describe un lugar físico o virtual que sirve para poder contextualizar muchas de las interacciones de las diferentes entidades y recursos.
 
 
 
